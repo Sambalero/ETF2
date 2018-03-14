@@ -176,6 +176,6 @@ def work_with_files(symbols=symbols):
         with open(filename, "w") as writeJSON:
             json.dump(fundata, writeJSON)
 
-    with open("this week", "w") as writeJSON:
+    with open("this_week.json", "w") as writeJSON:
         json.dump(this_week, writeJSON)
 # python -c 'from client import work_with_files; work_with_files()'
