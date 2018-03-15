@@ -9,26 +9,22 @@ def today_s_first_change(data, date, yesterday_s_close):
             float(data[date]["1. open"])) / yesterday_s_close
 
 
+# includes overnight delay
 def calc_return_based_on_daily_macd_hist(data):
-    macd_hist_returns = {}  # struct date:{MACD_Hist: mhreturn, mhvalue}
-    dates = list(sorted(data.keys()))
+    macd_hist_returns = {}  # struct d[ate:{MACD_Hist: mhreturn, mhvalue}
+    dates = []
     yesterday_s_close = 1
     yesterday_s_mhvalue = 1
-
-    first_macd_index = 0
-    for index, date in enumerate(dates):
-        macd_hist_returns[date] = {}
-# skip dates when the mdh value is not available
-#  ? change to while with counter?
-        if not("MACD_Hist" in data[date].keys()):
-            # print(data[date].keys())
-            first_macd_index = first_macd_index + 1
-            macd_hist_returns[date]["MACD_Hist"] = 0
-            # change to a woarnning if > x indexing:  1373 34
-            # print("indexing: ", index, first_macd_index)
-        else:
+    macd_days_held = 0
+# skip dates when the mdh value is not available for date in dates
+    for date in data.keys():
+        if "MACD_Hist" in data[date].keys():
+            dates.append(date)
+            macd_hist_returns[date] = {}
             macd_hist_returns[date]["MACD_Hist"] = data[date]["MACD_Hist"]
 
+    dates = list(sorted(dates))
+    for index, date in enumerate(dates):
         today_s_change = (float(data[date]["4. close"]) -
                           yesterday_s_close) / yesterday_s_close
 #  if yesterday's hist > 0 get return
@@ -37,6 +33,7 @@ def calc_return_based_on_daily_macd_hist(data):
             macd_hist_returns[date]["mhreturn"] = 0
 
         elif float(macd_hist_returns[dates[index - 1]]["MACD_Hist"]) > 0:
+            macd_days_held += 1
             if index > 1:
                 # first time is different
                 if not(float(macd_hist_returns[dates[index - 2]]
@@ -58,21 +55,20 @@ def calc_return_based_on_daily_macd_hist(data):
             macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue
             macd_hist_returns[date]["mhreturn"] = 0
 
-#  save yeteredy's close
+#  save yesterday's close
         yesterday_s_close = float(data[date]["4. close"])
 
 
 #  save yesterday's accrued value
         yesterday_s_mhvalue = macd_hist_returns[date]["mhvalue"]
-        number_of_days = (parser.parse(
-            dates[-1]) - parser.parse(dates[first_macd_index])).days
+    number_of_days = (parser.parse(dates[-1]) - parser.parse(dates[0])).days
 
     if number_of_days > 0:
         summary = 365 * (yesterday_s_mhvalue - 1) / number_of_days
     else:
         summary = 0
 
-    return(macd_hist_returns, summary)
+    return(macd_hist_returns, summary, macd_days_held)
 
 
 def calc_return_based_on_daily_stoch(data):
@@ -107,8 +103,6 @@ def calc_return_based_on_daily_stoch(data):
 
         number_of_days = (parser.parse(
             dates[-1]) - parser.parse(dates[0])).days
-
-    # print("summin the stoich")
 
     summary = 365 * (yesterday_s_value - 1) / number_of_days
 
@@ -180,7 +174,7 @@ def build_returns(symbol, data, returns):
     if not("summary" in returns.keys()):
         returns["summary"] = {}
 
-    mhdaily, mhaverage = calc_return_based_on_daily_macd_hist(data)
+    mhdaily, mhaverage, macd_days_held = calc_return_based_on_daily_macd_hist(data)
     srdaily, sraverage = simple_return(data)
 
     dates = list(sorted(data.keys()))
