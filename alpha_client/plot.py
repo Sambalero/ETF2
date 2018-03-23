@@ -98,9 +98,10 @@ def call_plot_3_y_values(symbols, fundata):
         plot_3_y_values(data_set, labels)
 
 
+# plots mdh, md value and price from returns file
 def work_with_files():
     try:
-        f = open("returns2.json")
+        f = open("./json/processed/" + "returns.json")
         fundata = json.load(f)
         f.close()
     except Exception as e:
@@ -117,6 +118,6 @@ def work_with_files():
         data_set = tuple(zip(exes, days, op, ch, re))
         plot_3_y_values(data_set, labels)
 
-    with open("returns3.json", "w") as writeJSON:
-        json.dump(data, writeJSON)
+    # with open("./json/processed/" + "returns3.json", "w") as writeJSON:
+    #     json.dump(data, writeJSON)
 # python -c 'from plot import work_with_files; work_with_files()'

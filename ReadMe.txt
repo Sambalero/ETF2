@@ -9,4 +9,29 @@ I am hoping to assess the validity of a series of investment intuitions I have a
 3. Funds have personalities
 4. Historical returns are the best unbiased indicator of future performance
 
+Call API, write to files:
+(pyenv) ~/Alpha_client/alpha_client 
+$ python -c 'from client import work_with_files; work_with_files()'
 
+Analyze API data & calculate returns, save to a cumulative file:
+(pyenv) ~/Alpha_client/alpha_client 
+$ python -c 'from analysis import work_with_files; work_with_files()'
+
+Compare macd hist based investment vs buy-and-hold strategy, 
+call api, no first buy/sell delay, print to stdout
+(pyenv) ~/Alpha_client/alpha_client 
+$ python -c 'from price_and_macd import main; main()'
+
+Compare macd hist based investment vs buy-and-hold strategy, 
+trade at the opening value after deciding ovrnight to buy or sell
+read from and save to files:
+(pyenv) ~/Alpha_client/alpha_client 
+$ python -c 'from price_and_macd import work_with_files; work_with_files()'
+
+Plot mdh, md value and price from returns file
+(pyenv) ~/Alpha_client/alpha_client 
+$ python -c 'from plot import work_with_files; work_with_files()'
+
+Fetch,build and plot mdh, md value and price data for each fund in config
+(pyenv) ~/Alpha_client/alpha_client 
+$ python main.py

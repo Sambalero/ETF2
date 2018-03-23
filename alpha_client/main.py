@@ -4,7 +4,9 @@ import plot
 from config import symbols
 
 # api_data: (funds tuple){api call object}[date][technical indicator key][value]
-# fundata: {funds object}[date][technical indicator][value]
+# fundata: {fund object}[date][technical indicator][value]
+#                        [meta][symbol, ]
+# fundsdata:{funds object}[fund]
 # returns: {returns object}[symbol][date][technical indicator][calculation][value]
 
 for symbol in symbols:

@@ -90,13 +90,13 @@ def work_with_files(symbols=symbols):
     this_week = {}
     for symbol in symbols:
         api_data = call_api(symbol)
-        filename = symbol + ".json"
+        filename = "./json/raw/" + symbol + ".json"
         fundata = build_data_object(symbol, api_data)
         this_week = week_by_date(symbol, this_week, api_data)
 
         with open(filename, "w") as writeJSON:
             json.dump(fundata, writeJSON)
 
-    with open("this_week.json", "w") as writeJSON:
+    with open("./json/this_week.json", "w") as writeJSON:
         json.dump(this_week, writeJSON)
 # python -c 'from client import work_with_files; work_with_files()'

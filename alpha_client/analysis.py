@@ -3,20 +3,25 @@ from dateutil import parser
 from config import symbols
 
 
-# Assume that we pay the opening value after deciding ovrnight to buy.
 def today_s_first_change(data, date, yesterday_s_close):
     return (float(data[date]["4. close"]) -
             float(data[date]["1. open"])) / yesterday_s_close
 
 
-# includes overnight delay
+def overnight_change(data, date, yesterday_s_close):
+    return (float(data[date]["1. open"]) - yesterday_s_close
+            ) / yesterday_s_close
+
+
+# Assumes that we trade at the opening value after deciding ovrnight to buy or sell
 def calc_return_based_on_daily_macd_hist(data):
-    macd_hist_returns = {}  # struct d[ate:{MACD_Hist: mhreturn, mhvalue}
+    # print(data)
+    macd_hist_returns = {}  # struct [date]["MACD_Hist"],["mhreturn"],["mhvalue"]
     dates = []
     yesterday_s_close = 1
     yesterday_s_mhvalue = 1
     macd_days_held = 0
-# skip dates when the mdh value is not available for date in dates
+# skip dates when the mdh value is not available
     for date in data.keys():
         if "MACD_Hist" in data[date].keys():
             dates.append(date)
@@ -24,42 +29,52 @@ def calc_return_based_on_daily_macd_hist(data):
             macd_hist_returns[date]["MACD_Hist"] = data[date]["MACD_Hist"]
 
     dates = list(sorted(dates))
+    # print(len(dates))
     for index, date in enumerate(dates):
         today_s_change = (float(data[date]["4. close"]) -
                           yesterday_s_close) / yesterday_s_close
-#  if yesterday's hist > 0 get return
+#  nothing to work with for the first entry
         if index == 0:
             macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue
             macd_hist_returns[date]["mhreturn"] = 0
-
+#  if yesterday's hist > 0 get return
         elif float(macd_hist_returns[dates[index - 1]]["MACD_Hist"]) > 0:
             macd_days_held += 1
             if index > 1:
-                # first time is different
+                # buy in at opening value
                 if not(float(macd_hist_returns[dates[index - 2]]
                        ["MACD_Hist"]) > 0):
                     macd_hist_returns[date]["mhreturn"] = today_s_first_change(
                         data, date, yesterday_s_close)
                     macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue * (
                         1 + today_s_first_change(data, date, yesterday_s_close))
-                else:  # not first time
+                else:  # keep returns close to close
                     macd_hist_returns[date]["mhreturn"] = today_s_change
                     macd_hist_returns[date][
                         "mhvalue"] = yesterday_s_mhvalue * (1 + today_s_change)
-            else:  # first time
+            else:  # index == 1: buy in
                 macd_hist_returns[date]["mhreturn"] = today_s_first_change(
                     data, date, yesterday_s_close)
                 macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue * \
                     (1 + today_s_first_change(data, date, yesterday_s_close))
-        else:  # yesterday_s_macd_hist < 0 - no change
-            macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue
-            macd_hist_returns[date]["mhreturn"] = 0
+        else:  # yesterday_s_macd_hist < 0 - sell or don't buy
+            if index > 1:
+                # sell takes the overnight change
+                if (float(macd_hist_returns[dates[index - 2]]
+                          ["MACD_Hist"]) > 0):
+                    macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue * (
+                        1 + overnight_change(data, date, yesterday_s_close))
+                    macd_hist_returns[date]["mhreturn"] = overnight_change(
+                        data, date, yesterday_s_close)
+                else:  # nothing
+                    macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue
+                    macd_hist_returns[date]["mhreturn"] = 0
+            else:  # index == 1: nothing
+                macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue
+                macd_hist_returns[date]["mhreturn"] = 0
 
-#  save yesterday's close
+#  save yesterday's close, yesterday's accrued value
         yesterday_s_close = float(data[date]["4. close"])
-
-
-#  save yesterday's accrued value
         yesterday_s_mhvalue = macd_hist_returns[date]["mhvalue"]
     number_of_days = (parser.parse(dates[-1]) - parser.parse(dates[0])).days
 
@@ -160,6 +175,7 @@ def simple_return(data):
                 float(data[date]["4. close"]) - yesterday_s_close) / yesterday_s_close
 
         buy_and_hold[date]["return since" + str(dates[0])] = change
+        buy_and_hold[date]["value"] = 1 + change
         buy_and_hold[date]["return"] = today_s_change
         yesterday_s_close = float(data[date]["4. close"])
 
@@ -194,20 +210,20 @@ def build_returns(symbol, data, returns):
 
 def work_with_files():
     try:
-        f = open("returns2.json")
+        f = open("./json/processed/returns.json")
         returns = json.load(f)
         f.close()
     except IOError:
         returns = {}
 
     for symbol in symbols:
-        filename = symbol + ".json"
+        filename = "./json/raw/" + symbol + ".json"
         f = open(filename)
         data = json.load(f)
         f.close()
 
         returns = build_returns(symbol, data, returns)
 
-    with open("returns2.json", "w") as writeJSON:
+    with open("./json/processed/returns.json", "w") as writeJSON:
         json.dump(returns, writeJSON)
 # python -c 'from analysis import work_with_files; work_with_files()'

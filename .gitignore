@@ -109,3 +109,4 @@ config*
 #output files
 *.json
 *.csv
+*notes*.txt
