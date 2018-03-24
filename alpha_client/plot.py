@@ -81,6 +81,9 @@ def plot_3_y_values(data_set, labels):
 
     plt.legend()
     plt.title(labels[0])
+    if labels[5] == "file":
+        plot_name = "./plots/" + labels[0] + " " + labels[4] + de[-1] + ".png"
+        plt.savefig(plot_name)
     plt.show()
 
 
@@ -88,7 +91,7 @@ def plot_3_y_values(data_set, labels):
 def call_plot_3_y_values(symbols, fundata):
     for symbol in symbols:
         data = plottable(fundata[symbol])
-        labels = (symbol, "MACD_Hist", "mhvalue", "price", "macd and price")
+        labels = (symbol, "MACD_Hist", "mhvalue", "price", "macd and price", "show")
         days = [str(int(day.replace('-', '')) - 20000000) for day in (data["dates"])]
         op = data["MACD_Hist"]
         ch = data["mhvalue"]
@@ -109,7 +112,7 @@ def work_with_files():
 
     for symbol in symbols:
         data = plottable(fundata[symbol])
-        labels = (symbol, "MACD_Hist", "mhvalue", "price", "macd and price")
+        labels = (symbol, "MACD_Hist", "mhvalue", "price", "macd and price", "file")
         days = [str(int(day.replace('-', '')) - 20000000) for day in (data["dates"])]
         op = data["MACD_Hist"]
         ch = data["mhvalue"]
@@ -118,6 +121,4 @@ def work_with_files():
         data_set = tuple(zip(exes, days, op, ch, re))
         plot_3_y_values(data_set, labels)
 
-    # with open("./json/processed/" + "returns3.json", "w") as writeJSON:
-    #     json.dump(data, writeJSON)
 # python -c 'from plot import work_with_files; work_with_files()'

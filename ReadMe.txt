@@ -28,7 +28,7 @@ read from and save to files:
 (pyenv) ~/Alpha_client/alpha_client 
 $ python -c 'from price_and_macd import work_with_files; work_with_files()'
 
-Plot mdh, md value and price from returns file
+Plot mdh, md value and price from returns file; save plot
 (pyenv) ~/Alpha_client/alpha_client 
 $ python -c 'from plot import work_with_files; work_with_files()'
 
