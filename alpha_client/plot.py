@@ -1,18 +1,21 @@
 import json
 from matplotlib import pyplot as plt
-from config import symbols
+from config import symbols, daterange
 
 
-def plottable(data):
-    plots = {}
-    dates = list(sorted(data.keys()))
-    plots["dates"] = dates
-    keys = list(data[dates[50]].keys())
+# Massage fundata into parallel lists for plotting
+def plottable(fundata):
+    plottable = {}
+    dates = list(sorted(fundata.keys()))
+    plottable["dates"] = dates
+    # [dates[50] will include all the indicators
+    keys = list(fundata[dates[50]].keys())
+    # print(keys)
     for key in keys:
-        plots[key] = []
+        plottable[key] = []
         for date in dates:
-            plots[key].append(float(data[date][key]))
-    return plots
+            plottable[key].append(float(fundata[date][key]))
+    return plottable
 
 
 def plot_3_y_values(data_set, labels):
@@ -121,4 +124,36 @@ def work_with_files():
         data_set = tuple(zip(exes, days, op, ch, re))
         plot_3_y_values(data_set, labels)
 
+
+def work_with_pm_files():
+    start = daterange[0]
+    end = daterange[1]
+    if start and end:
+        filename = "./json/processed/pm" + start + " - " + end + ".json"
+    else:
+        filename = "./json/processed/pm.json"
+
+    try:
+        f = open(filename)
+        fundsdata = json.load(f)
+        f.close()
+    except Exception as e:
+        print("if the file is missing, we could generate one here if we have to")
+        print(e)
+
+    for symbol in symbols:
+        fundata = fundsdata[symbol]
+        del fundata["meta"]
+        data = plottable(fundata)
+        title = symbol + ": MACD and price, " + start + " - " + end
+        labels = (symbol, "MACD_Hist", "mhvalue", "price", title, "file")
+        days = [str(int(day.replace('-', '')) - 20000000) for day in (data["dates"])]
+        op = data["MACD_Hist"]
+        ch = data["mhvalue"]
+        re = data["price"]
+        exes, days = zip(*[day for day in enumerate(days)])
+        data_set = tuple(zip(exes, days, op, ch, re))
+        plot_3_y_values(data_set, labels)
+
 # python -c 'from plot import work_with_files; work_with_files()'
+# python -c 'from plot import work_with_pm_files; work_with_pm_files()'

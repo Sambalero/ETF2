@@ -1,7 +1,7 @@
 # Average return on day-after macd signal hold compared to average return timespan
 from api import priceset, macds
 from client import build_data_object, call_api
-from config import symbols
+from config import symbols, daterange
 import json
 from analysis import calc_return_based_on_daily_macd_hist, simple_return
 
@@ -41,10 +41,11 @@ def price_and_macd_data(symbol, start=0, **kwargs):  # end expected in kwargs
 # compares macd hist based investment vs buy-and-hold strategy
 # input: fund data, date range
 # call analysis methods for calculated values
-# output to stdout and return to caller
+# append daily return values to fundata object
+# output final values to stdout and return everything
 def price_v_macd(symbol, fund_data, start='0', **kwargs):  # end expected in kwargs
     dates = []
-    fundata = {}
+    fundata = {}  # a new object that only covers the given range
     for date in fund_data.keys():
         if int(date.replace("-", "")) >= int(start.replace("-", "")):
             if not ("end" in kwargs):
@@ -56,12 +57,14 @@ def price_v_macd(symbol, fund_data, start='0', **kwargs):  # end expected in kwa
     (macd_hist_returns, summary, macd_days_held) = (
         calc_return_based_on_daily_macd_hist(fundata))
     buy_and_hold, average_simple_return = simple_return(fundata)
+    initial_price = float(fundata[dates[0]]["4. close"])
     for date in dates:
         if date in macd_hist_returns.keys():
             fundata[date]["mhreturn"] = macd_hist_returns[date]["mhreturn"]
             fundata[date]["mhvalue"] = macd_hist_returns[date]["mhvalue"]
             fundata[date]["buy and hold value"] = buy_and_hold[date]["value"]
             fundata[date]["return"] = buy_and_hold[date]["return"]
+            fundata[date]["price"] = float(fundata[date]["4. close"]) / initial_price
     print(symbol, dates[0], dates[-1])
     print(symbol, "Average rate of return using MACD_Hist:", summary)
     per_day = 365 * (macd_hist_returns[dates[-2]]["mhvalue"] - 1) / (macd_days_held - 1)
@@ -86,11 +89,9 @@ def main():
 # Use data from files rather than call the api.
 # But call the api if you have to
 # write to files, too.
-def work_with_files():  # (start=null, end=null)
-    start = None
-    end = None
-    # start = '2015-01-01'
-    # end = '2016-01-01'
+def work_with_files():
+    start = daterange[0]
+    end = daterange[1]
     n, amr, day, asr = 0, 0, 0, 0
     price_and_macd = {}
     for symbol in symbols:
@@ -111,11 +112,12 @@ def work_with_files():  # (start=null, end=null)
         else:
             (summary, per_day, average_simple_return, macd_hist_returns, fundata) = (
                 price_v_macd(symbol, fundata))
-        fundata["symbol"] = symbol
-        fundata["summary"] = summary
-        fundata["per_day"] = per_day
-        fundata["average_simple_return"] = average_simple_return
-        fundata["macd_hist_returns"] = macd_hist_returns
+        fundata["meta"] = {}
+        fundata["meta"]["symbol"] = symbol
+        fundata["meta"]["summary"] = summary
+        fundata["meta"]["per_day"] = per_day
+        fundata["meta"]["average_simple_return"] = average_simple_return
+        fundata["meta"]["macd_hist_returns"] = macd_hist_returns
         amr += summary
         day += per_day
         asr += average_simple_return
