@@ -1,6 +1,7 @@
 import json
 from matplotlib import pyplot as plt
 from config import symbols, daterange
+from price_and_macd import add_to_pm_funds_data
 
 
 # Massage fundata into parallel lists for plotting
@@ -10,12 +11,25 @@ def plottable(fundata):
     plottable["dates"] = dates
     # [dates[50] will include all the indicators
     keys = list(fundata[dates[50]].keys())
-    # print(keys)
     for key in keys:
         plottable[key] = []
         for date in dates:
             plottable[key].append(float(fundata[date][key]))
     return plottable
+
+
+def full_pm(fun_data):
+    fundata = {}
+    all_the_keys = ['1. open', '2. high', '3. low', '4. close', '5. volume', 'MACD',
+                    'MACD_Hist', 'MACD_Signal', 'SlowD', 'SlowK', 'RSI', 'ADX', 'CCI',
+                    'Aroon Down', 'Aroon Up', 'Chaikin A/D', 'Real Lower Band',
+                    'Real Upper Band', 'Real Middle Band', 'OBV', 'mhreturn',
+                    'mhvalue', 'buy and hold value', 'return', 'price']
+    for date in fun_data.keys():
+        keys = fun_data[date].keys()
+        if set(all_the_keys) <= set(keys):
+            fundata[date] = fun_data[date]
+    return fundata
 
 
 def plot_3_y_values(data_set, labels):
@@ -85,7 +99,8 @@ def plot_3_y_values(data_set, labels):
     plt.legend()
     plt.title(labels[0])
     if labels[5] == "file":
-        plot_name = "./plots/" + labels[0] + " " + labels[4] + de[-1] + ".png"
+        plot_name = "./plots/" + labels[4] + ".png"
+        print(plot_name)
         plt.savefig(plot_name)
     plt.show()
 
@@ -104,30 +119,11 @@ def call_plot_3_y_values(symbols, fundata):
         plot_3_y_values(data_set, labels)
 
 
-# plots mdh, md value and price from returns file
+# plots mdh, md value and price from pm files
 def work_with_files():
-    try:
-        f = open("./json/processed/" + "returns.json")
-        fundata = json.load(f)
-        f.close()
-    except Exception as e:
-        print(e)
-
-    for symbol in symbols:
-        data = plottable(fundata[symbol])
-        labels = (symbol, "MACD_Hist", "mhvalue", "price", "macd and price", "file")
-        days = [str(int(day.replace('-', '')) - 20000000) for day in (data["dates"])]
-        op = data["MACD_Hist"]
-        ch = data["mhvalue"]
-        re = data["price"]
-        exes, days = zip(*[day for day in enumerate(days)])
-        data_set = tuple(zip(exes, days, op, ch, re))
-        plot_3_y_values(data_set, labels)
-
-
-def work_with_pm_files():
     start = daterange[0]
     end = daterange[1]
+    fundsdata = {}
     if start and end:
         filename = "./json/processed/pm" + start + " - " + end + ".json"
     else:
@@ -142,18 +138,25 @@ def work_with_pm_files():
         print(e)
 
     for symbol in symbols:
-        fundata = fundsdata[symbol]
+        if not(symbol in fundsdata.keys()):
+            fundata = add_to_pm_funds_data(symbol)
+        else:
+            fundata = fundsdata[symbol]
         del fundata["meta"]
-        data = plottable(fundata)
-        title = symbol + ": MACD and price, " + start + " - " + end
+        if not(start and end):
+            fundata = full_pm(fundata)
+            title = symbol + " MACD and Price"
+        else:
+            title = symbol + " MACD and Price, " + start + " - " + end
+        fundata = plottable(fundata)
         labels = (symbol, "MACD_Hist", "mhvalue", "price", title, "file")
-        days = [str(int(day.replace('-', '')) - 20000000) for day in (data["dates"])]
-        op = data["MACD_Hist"]
-        ch = data["mhvalue"]
-        re = data["price"]
+        print(labels)
+        days = [str(int(day.replace('-', '')) - 20000000) for day in (fundata["dates"])]
+        op = fundata["MACD_Hist"]
+        ch = fundata["mhvalue"]
+        re = fundata["price"]
         exes, days = zip(*[day for day in enumerate(days)])
         data_set = tuple(zip(exes, days, op, ch, re))
         plot_3_y_values(data_set, labels)
 
 # python -c 'from plot import work_with_files; work_with_files()'
-# python -c 'from plot import work_with_pm_files; work_with_pm_files()'

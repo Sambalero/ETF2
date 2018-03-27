@@ -4,7 +4,7 @@ from config import symbols
 
 
 def call_api(symbol):
-    print("calling api for ", symbol)
+    print("calling api for", symbol)
     prices = priceset(symbol)
     macd = macds(symbol)
     stoch = stoich(symbol)

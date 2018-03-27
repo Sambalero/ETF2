@@ -1,2 +1,4 @@
+clean plot comments
+
 date input for price and macd, single fund everywhere
 cumulative write for pm file

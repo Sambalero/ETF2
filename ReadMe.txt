@@ -23,7 +23,7 @@ call api, no first buy/sell delay, print to stdout
 $ python -c 'from price_and_macd import main; main()'
 
 Compare macd hist based investment vs buy-and-hold strategy, 
-trade at the opening value after deciding ovrnight to buy or sell
+trade at the opening value after deciding overnight to buy or sell
 read from and save to files:
 (pyenv) ~/Alpha_client/alpha_client 
 $ python -c 'from price_and_macd import work_with_files; work_with_files()'
