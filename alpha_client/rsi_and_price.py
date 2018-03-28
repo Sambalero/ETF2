@@ -3,7 +3,7 @@ from api import priceset, macds, rsis
 from client import build_data_object, call_api
 from config import symbols, daterange
 import json
-from analysis import calc_return_based_on_daily_macd_hist, simple_return, calc_rsi_returns
+from analysis import calc_return_based_on_daily_macd_hist, simple_return, calc_rsi_returns, calc_returns
 
 
 # compares macd hist bsed investment vs buy-and-hold strategy
@@ -59,6 +59,7 @@ def add_to_pm_funds_data(symbol):
 # output final values to stdout and return everything
 def rsi_v_price(symbol, fund_data, start='0', **kwargs):  # end expected in kwargs
     dates = []
+    indicator = "RSI"
     fundata = {}  # a new object that only covers the given range
     for date in fund_data.keys():
         if int(date.replace("-", "")) >= int(start.replace("-", "")):
@@ -68,28 +69,32 @@ def rsi_v_price(symbol, fund_data, start='0', **kwargs):  # end expected in kwar
                 dates.append(date)
                 fundata[date] = fund_data[date]
     dates = list(sorted(dates))
-    rsi_returns = calc_rsi_returns(fundata)
+    # rsi_returns = calc_rsi_returns(fundata)
+    rsi_returns = calc_returns(fundata, indicator)
     buy_and_hold, average_simple_return = simple_return(fundata)
     initial_price = float(fundata[dates[0]]["4. close"])
+    print(rsi_returns["RSImeta"].keys())
     for date in dates:
         if date in rsi_returns.keys():
-            fundata[date]["rsi_return"] = rsi_returns[date]["rsi_return"]
-            fundata[date]["rsi_value"] = rsi_returns[date]["rsi_value"]
+            fundata[date][indicator + "return"] = rsi_returns[date][indicator + "return"]
+            fundata[date][indicator + "value"] = rsi_returns[date][indicator + "value"]
             fundata[date]["buy and hold value"] = buy_and_hold[date]["value"]
             fundata[date]["return"] = buy_and_hold[date]["return"]
             fundata[date]["price"] = float(fundata[date]["4. close"]) / initial_price
     print(symbol, dates[0], dates[-1])
-    print(symbol, "Average rate of return using RSI:", rsi_returns["rsi meta"]["rsi_average_return_rate"])
-    per_day = 365 * (rsi_returns[dates[-2]]["rsi_value"] - 1) / (rsi_returns["rsi meta"]["rsi_days_held"] - 1)
-    print(symbol, "Average per-day-held return using RSI:", rsi_returns["rsi meta"]["rsi_average_return_rate"])
-    print(symbol, "Average_simple_return:", average_simple_return)
+    print(symbol, "Average rate of return using RSI:", rsi_returns["RSImeta"]["RSI average_return_rate"])
+    per_day = 365 * (rsi_returns[dates[-2]]["RSIvalue"] - 1) / (rsi_returns["RSImeta"]["RSI days_held"] - 1)
+    print(symbol, "Average per-day-held return using RSI:", rsi_returns["RSImeta"]["RSI average_return_rate"])
+    print(symbol, "Average_simple_return using RSI:", average_simple_return)
+    print(symbol, "RSI days_right_rate:", rsi_returns["RSImeta"]["RSI days_right_rate"])
+
     fundata["meta"] = {}
-    fundata["meta"]["Average rate of return using RSI"] = rsi_returns["rsi meta"]["rsi_average_return_rate"]
+    fundata["meta"]["Average rate of return using RSI"] = rsi_returns["RSImeta"]["RSI average_return_rate"]
     fundata["meta"]["Average per-day-held return using RSI"] = per_day
-    fundata["meta"]["RSI days held"] = rsi_returns["rsi meta"]["rsi_days_held"]
+    fundata["meta"]["RSI days held"] = rsi_returns["RSImeta"]["RSI days_held"]
     fundata["meta"]["Average_simple_return"] = average_simple_return
-    fundata["meta"]["Length of time averaged"] = rsi_returns["rsi meta"]["number_of_days"]
-    fundata["meta"]["Next day right rate"] = rsi_returns["rsi meta"]["days_right_rate"]
+    fundata["meta"]["Length of time averaged"] = rsi_returns["RSImeta"]["RSI number_of_days"]
+    fundata["meta"]["Next day right rate"] = rsi_returns["RSImeta"]["RSI days_right_rate"]
     fundata["meta"]["symbol"] = symbol
     fundata["meta"]["date range"] = (dates[0], dates[-1])
     return(fundata)
@@ -133,7 +138,7 @@ def work_with_files():
     for symbol in symbols:
         fundata = get_fundata(symbol)
         if start and end:
-            fundata = (rsi_v_price(symbol, fundata, start, end=end))   # *******LEFT method HERE^^^^^^^^^^^^^^^^^^^^^^^^^^
+            fundata = (rsi_v_price(symbol, fundata, start, end=end))  
         else:
             fundata = (rsi_v_price(symbol, fundata))
         amr += fundata["meta"]["Average rate of return using RSI"]

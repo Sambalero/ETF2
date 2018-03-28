@@ -9,6 +9,8 @@ I am hoping to assess the validity of a series of investment intuitions I have a
 3. Funds have personalities
 4. Historical returns are the best unbiased indicator of future performance
 
+Information about technical indicators can be found using links in the https://www.alphavantage.co docs page
+
 Call API, write to files:
 (pyenv) ~/Alpha_client/alpha_client 
 $ python -c 'from client import work_with_files; work_with_files()'
@@ -28,9 +30,15 @@ read from and save to files:
 (pyenv) ~/Alpha_client/alpha_client 
 $ python -c 'from price_and_macd import work_with_files; work_with_files()'
 
-Plot mdh, md value and price from returns file; save plot
+Plot  macd hist, macd hist based investment value and price from returns file; save plot
 (pyenv) ~/Alpha_client/alpha_client 
 $ python -c 'from plot import work_with_files; work_with_files()'
+
+Compare RSI hist based investment vs buy-and-hold strategy, 
+trade at the opening value after deciding overnight to buy or sell
+read from and save to files:
+(pyenv) ~/Alpha_client/alpha_client 
+$ python -c 'from rsi_and_price import work_with_files; work_with_files()'
 
 Fetch,build and plot mdh, md value and price data for each fund in config
 (pyenv) ~/Alpha_client/alpha_client 

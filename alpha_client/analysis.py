@@ -3,99 +3,194 @@ from dateutil import parser
 from config import symbols
 
 
-def today_s_first_change(data, date, yesterday_s_close):
+def today_s_first_change(data, date, yesterday_s_close):  # helpers
     return (float(data[date]["4. close"]) -
             float(data[date]["1. open"])) / yesterday_s_close
 
 
-def overnight_change(data, date, yesterday_s_close):
+def overnight_change(data, date, yesterday_s_close):  # helpers
     return (float(data[date]["1. open"]) - yesterday_s_close
             ) / yesterday_s_close
 
 
 # Assumes that we trade at the opening value after deciding ovrnight to buy or sell
-def calc_rsi_returns(data):
-    # print(data)
-    rsi_returns = {}  # struct [date]["RSI"],["rsi_return"],["rsi_value"];
-    rsi_returns["rsi meta"] = {}
-    # ["rsi_average_return_rate"],["rsi_days_held"],["days_right_rate"],["number_of_days"]
+def calc_returns(fundata, indicator):
+    # print(fundata)
+    returns = {}  # struct [date][indicator],[net_return],[value];
+    meta = indicator + "meta"
+    returns[meta] = {}  # helper???
+    # ["rsi_average_return_rate"],["days_held"],["days_right_rate"],["number_of_days"]
     dates = []
-    yesterday_s_close = 1
-    yesterday_s_rsi_value = 1
-    rsi_days_held = 0
-    next_days_right = 0
-    rsi_rightable_days = 0
-# skip dates when the mdh value is not available
-    for date in data.keys():
-        if "RSI" in data[date].keys():
+    for date in fundata.keys():
+        if indicator in fundata[date].keys():
             dates.append(date)
-            rsi_returns[date] = {}
-            rsi_returns[date]["RSI"] = data[date]["RSI"]
+            returns[date] = {}
+            returns[date][indicator] = fundata[date][indicator]
+    yesterday_s_close = 1
+    yesterday_s_value = 1
+    value = 1
+    days_held = 0
+    next_days_right = 0
+    rightable_days = 0   # maarket days?
+# skip dates when the mdh value is not available
+    for date in fundata.keys():  # helpers fundates
+        if indicator in fundata[date].keys():
+            dates.append(date)
+            returns[date] = {}
+            returns[date][indicator] = fundata[date][indicator]
 
     dates = list(sorted(dates))
+    value = indicator + "value"
+    net_return = indicator + "return"
     for index, date in enumerate(dates):
-        today_s_change = (float(data[date]["4. close"]) -
+        today_s_change = (float(fundata[date]["4. close"]) -
                           yesterday_s_close) / yesterday_s_close
 #  nothing to work with for the first entry
         if index == 0:
-            rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value
-            rsi_returns[date]["rsi_return"] = 0
-#  if yesterday's hist > 0 get return
-        elif float(rsi_returns[dates[index - 1]]["RSI"]) >= 0:
-            rsi_days_held += 1
-            rsi_rightable_days += 1
+            returns[date][value] = yesterday_s_value
+            returns[date][net_return] = 0
+#  if yesterday's hist > 0 get net_return
+        elif float(returns[dates[index - 1]][indicator]) >= 0:
+            days_held += 1
+            rightable_days += 1
             if today_s_change >= 0:
                 next_days_right += 1
             if index > 1:
                 # buy in at opening value
-                if not(float(rsi_returns[dates[index - 2]]
-                       ["RSI"]) > 0):
-                    rsi_returns[date]["rsi_return"] = today_s_first_change(
-                        data, date, yesterday_s_close)
-                    rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value * (
-                        1 + today_s_first_change(data, date, yesterday_s_close))
+                if not(float(returns[dates[index - 2]]
+                       [indicator]) > 0):
+                    returns[date][net_return] = today_s_first_change(
+                        fundata, date, yesterday_s_close)
+                    returns[date][value] = yesterday_s_value * (
+                        1 + today_s_first_change(fundata, date, yesterday_s_close))
                 else:  # keep returns close to close
-                    rsi_returns[date]["rsi_return"] = today_s_change
-                    rsi_returns[date][
-                        "rsi_value"] = yesterday_s_rsi_value * (1 + today_s_change)
+                    returns[date][net_return] = today_s_change
+                    returns[date][
+                        value] = yesterday_s_value * (1 + today_s_change)
             else:  # index == 1: buy in
-                rsi_returns[date]["rsi_return"] = today_s_first_change(
-                    data, date, yesterday_s_close)
-                rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value * \
-                    (1 + today_s_first_change(data, date, yesterday_s_close))
+                returns[date][net_return] = today_s_first_change(
+                    fundata, date, yesterday_s_close)
+                returns[date][value] = yesterday_s_value * \
+                    (1 + today_s_first_change(fundata, date, yesterday_s_close))
         else:  # yesterday_s_macd_hist < 0 - sell or don't buy
             if index > 1:
-                rsi_rightable_days += 1
+                rightable_days += 1
                 if today_s_change < 0:
                     next_days_right += 1
                 # sell takes the overnight change
-                if (float(rsi_returns[dates[index - 2]]
-                          ["RSI"]) > 0):
-                    rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value * (
-                        1 + overnight_change(data, date, yesterday_s_close))
-                    rsi_returns[date]["rsi_return"] = overnight_change(
-                        data, date, yesterday_s_close)
+                if (float(returns[dates[index - 2]]
+                          [indicator]) > 0):
+                    returns[date][value] = yesterday_s_value * (
+                        1 + overnight_change(fundata, date, yesterday_s_close))
+                    returns[date][net_return] = overnight_change(
+                        fundata, date, yesterday_s_close)
                 else:  # nothing
-                    rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value
-                    rsi_returns[date]["rsi_return"] = 0
+                    returns[date][value] = yesterday_s_value
+                    returns[date][net_return] = 0
             else:  # index == 1: nothing
-                rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value
-                rsi_returns[date]["rsi_return"] = 0
+                returns[date][value] = yesterday_s_value
+                returns[date][net_return] = 0
 
 #  save yesterday's close, yesterday's accrued value
-        yesterday_s_close = float(data[date]["4. close"])
-        yesterday_s_rsi_value = rsi_returns[date]["rsi_value"]
-    rsi_returns["rsi meta"]["number_of_days"] = (
+        yesterday_s_close = float(fundata[date]["4. close"])
+        yesterday_s_value = returns[date][value]
+    average_return_rate = indicator + " average_return_rate"
+    number_of_days = indicator + " number_of_days"
+    returns[meta][number_of_days] = (
         parser.parse(dates[-1]) - parser.parse(dates[0])).days
-    number_of_days = (parser.parse(dates[-1]) - parser.parse(dates[0])).days
-    if number_of_days > 0:
-        rsi_returns["rsi meta"]["rsi_average_return_rate"] = 365 * (
-            yesterday_s_rsi_value - 1) / number_of_days
+    if returns[meta][number_of_days] > 0:
+        returns[meta][average_return_rate] = 365 * (
+            yesterday_s_value - 1) / returns[meta][number_of_days]
     else:
-        rsi_returns["rsi meta"]["rsi_average_return_rate"] = 0
-    rsi_returns["rsi meta"]["rsi_days_held"] = rsi_days_held
-    rsi_returns["rsi meta"]["days_right_rate"] = next_days_right / rsi_rightable_days
-    return(rsi_returns)
+        returns[meta][average_return_rate] = 0
+    returns[meta][indicator + " days_held"] = days_held
+    returns[meta][indicator + " days_right_rate"] = next_days_right / rightable_days
+    return(returns)
+
+
+# # Assumes that we trade at the opening value after deciding ovrnight to buy or sell
+# def calc_rsi_returns(data):
+#     # print(data)
+#     rsi_returns = {}  # struct [date]["RSI"],["rsi_return"],["rsi_value"];
+#     rsi_returns["rsi meta"] = {}  # helper???
+#     # ["rsi_average_return_rate"],["rsi_days_held"],["days_right_rate"],["number_of_days"]
+#     dates = []
+#     yesterday_s_close = 1
+#     yesterday_s_rsi_value = 1
+#     rsi_days_held = 0
+#     next_days_right = 0
+#     rsi_rightable_days = 0
+# # skip dates when the mdh value is not available
+#     for date in data.keys():  # helpers fundates
+#         if "RSI" in data[date].keys():
+#             dates.append(date)
+#             rsi_returns[date] = {}
+#             rsi_returns[date]["RSI"] = data[date]["RSI"]
+
+#     dates = list(sorted(dates))
+#     for index, date in enumerate(dates):
+#         today_s_change = (float(data[date]["4. close"]) -
+#                           yesterday_s_close) / yesterday_s_close
+# #  nothing to work with for the first entry
+#         if index == 0:
+#             rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value
+#             rsi_returns[date]["rsi_return"] = 0
+# #  if yesterday's hist > 0 get return
+#         elif float(rsi_returns[dates[index - 1]]["RSI"]) >= 0:
+#             rsi_days_held += 1
+#             rsi_rightable_days += 1
+#             if today_s_change >= 0:
+#                 next_days_right += 1
+#             if index > 1:
+#                 # buy in at opening value
+#                 if not(float(rsi_returns[dates[index - 2]]
+#                        ["RSI"]) > 0):
+#                     rsi_returns[date]["rsi_return"] = today_s_first_change(
+#                         data, date, yesterday_s_close)
+#                     rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value * (
+#                         1 + today_s_first_change(data, date, yesterday_s_close))
+#                 else:  # keep returns close to close
+#                     rsi_returns[date]["rsi_return"] = today_s_change
+#                     rsi_returns[date][
+#                         "rsi_value"] = yesterday_s_rsi_value * (1 + today_s_change)
+#             else:  # index == 1: buy in
+#                 rsi_returns[date]["rsi_return"] = today_s_first_change(
+#                     data, date, yesterday_s_close)
+#                 rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value * \
+#                     (1 + today_s_first_change(data, date, yesterday_s_close))
+#         else:  # yesterday_s_macd_hist < 0 - sell or don't buy
+#             if index > 1:
+#                 rsi_rightable_days += 1
+#                 if today_s_change < 0:
+#                     next_days_right += 1
+#                 # sell takes the overnight change
+#                 if (float(rsi_returns[dates[index - 2]]
+#                           ["RSI"]) > 0):
+#                     rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value * (
+#                         1 + overnight_change(data, date, yesterday_s_close))
+#                     rsi_returns[date]["rsi_return"] = overnight_change(
+#                         data, date, yesterday_s_close)
+#                 else:  # nothing
+#                     rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value
+#                     rsi_returns[date]["rsi_return"] = 0
+#             else:  # index == 1: nothing
+#                 rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value
+#                 rsi_returns[date]["rsi_return"] = 0
+
+# #  save yesterday's close, yesterday's accrued value
+#         yesterday_s_close = float(data[date]["4. close"])
+#         yesterday_s_rsi_value = rsi_returns[date]["rsi_value"]
+#     rsi_returns["rsi meta"]["number_of_days"] = (
+#         parser.parse(dates[-1]) - parser.parse(dates[0])).days
+#     number_of_days = (parser.parse(dates[-1]) - parser.parse(dates[0])).days
+#     if number_of_days > 0:
+#         rsi_returns["rsi meta"]["rsi_average_return_rate"] = 365 * (
+#             yesterday_s_rsi_value - 1) / number_of_days
+#     else:
+#         rsi_returns["rsi meta"]["rsi_average_return_rate"] = 0
+#     rsi_returns["rsi meta"]["rsi_days_held"] = rsi_days_held
+#     rsi_returns["rsi meta"]["days_right_rate"] = next_days_right / rsi_rightable_days
+#     return(rsi_returns)
 
 
 # Assumes that we trade at the opening value after deciding ovrnight to buy or sell
