@@ -3,7 +3,9 @@ from api import priceset, macds
 from client import build_data_object, call_api
 from config import symbols, daterange
 import json
-from analysis import calc_return_based_on_daily_macd_hist, simple_return
+from analysis import simple_return, calc_returns
+from rsi_and_price import indicator_v_price
+# from analysis import calc_return_based_on_daily_macd_hist,
 
 
 # compares macd hist bsed investment vs buy-and-hold strategy
@@ -11,31 +13,31 @@ from analysis import calc_return_based_on_daily_macd_hist, simple_return
 # call api for price and macd data
 # call analysis methods for calculated values
 # output to stdout and return to caller
-def price_and_macd_data(symbol, start=0, **kwargs):  # end expected in kwargs
-    prices = priceset(symbol)
-    macd = macds(symbol)
-    dates = []
-    for date in prices.keys():
-        if int(date.replace("-", "")) >= start:
-            if "end" in kwargs and int(date.replace("-", "")) > kwargs['end']:
-                dates.append(date)
-            else:
-                dates.append(date)
-    dates = list(sorted(dates))
-    for date in dates:
-        if (not (macd is None)) and date in macd.keys():
-            prices[date]["MACD"] = macd[date]["MACD"]
-            prices[date]["MACD_Hist"] = macd[date]["MACD_Hist"]
-            prices[date]["MACD_Signal"] = macd[date]["MACD_Signal"]
-    (macd_hist_returns, summary, macd_days_held) = (
-        calc_return_based_on_daily_macd_hist(prices))
-    print(symbol, dates[0], dates[-1])  # ********HERE IS THE NO DATE DATE RANGE^^^^^^^^^^^^^^^^^^^^^^^^^^
-    print(symbol, "Average rate of return using MACD_Hist:", summary)
-    per_day = 365 * (macd_hist_returns[dates[-2]]["mhvalue"] - 1) / (macd_days_held - 1)
-    print(symbol, "Average per-day-held return using MACD_Hist:", per_day)
-    buy_and_hold, average_simple_return = simple_return(prices)
-    print(symbol, "Average_simple_return:", average_simple_return)
-    return(summary, per_day, average_simple_return)
+# def price_and_macd_data(symbol, start=0, **kwargs):  # end expected in kwargs
+#     prices = priceset(symbol)
+#     macd = macds(symbol)
+#     dates = []
+#     for date in prices.keys():
+#         if int(date.replace("-", "")) >= start:
+#             if "end" in kwargs and int(date.replace("-", "")) > kwargs['end']:
+#                 dates.append(date)
+#             else:
+#                 dates.append(date)
+#     dates = list(sorted(dates))
+#     for date in dates:
+#         if (not (macd is None)) and date in macd.keys():
+#             prices[date]["MACD"] = macd[date]["MACD"]
+#             prices[date]["MACD_Hist"] = macd[date]["MACD_Hist"]
+#             prices[date]["MACD_Signal"] = macd[date]["MACD_Signal"]
+#     (macd_hist_returns, summary, macd_days_held) = (
+#         calc_return_based_on_daily_macd_hist(prices))
+#     print(symbol, dates[0], dates[-1])  # ********HERE IS THE NO DATE DATE RANGE^^^^^^^^^^^^^^^^^^^^^^^^^^
+#     print(symbol, "Average rate of return using MACD_Hist:", summary)
+#     per_day = 365 * (macd_hist_returns[dates[-2]]["mhvalue"] - 1) / (macd_days_held - 1)
+#     print(symbol, "Average per-day-held return using MACD_Hist:", per_day)
+#     buy_and_hold, average_simple_return = simple_return(prices)
+#     print(symbol, "Average_simple_return:", average_simple_return)
+#     return(summary, per_day, average_simple_return)
 
 
 # from plot 140

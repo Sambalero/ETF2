@@ -109,23 +109,21 @@ def calc_returns(fundata, indicator):
 
 
 # # Assumes that we trade at the opening value after deciding ovrnight to buy or sell
-# def calc_rsi_returns(data):
+# def calc_return_based_on_daily_macd_hist(data):
 #     # print(data)
-#     rsi_returns = {}  # struct [date]["RSI"],["rsi_return"],["rsi_value"];
-#     rsi_returns["rsi meta"] = {}  # helper???
-#     # ["rsi_average_return_rate"],["rsi_days_held"],["days_right_rate"],["number_of_days"]
+#     macd_hist_returns = {}  # struct [date]["MACD_Hist"],["mhreturn"],["mhvalue"]
 #     dates = []
 #     yesterday_s_close = 1
-#     yesterday_s_rsi_value = 1
+#     yesterday_s_mhvalue = 1
 #     rsi_days_held = 0
 #     next_days_right = 0
 #     rsi_rightable_days = 0
 # # skip dates when the mdh value is not available
-#     for date in data.keys():  # helpers fundates
-#         if "RSI" in data[date].keys():
+#     for date in data.keys():
+#         if "MACD_Hist" in data[date].keys():
 #             dates.append(date)
-#             rsi_returns[date] = {}
-#             rsi_returns[date]["RSI"] = data[date]["RSI"]
+#             macd_hist_returns[date] = {}
+#             macd_hist_returns[date]["MACD_Hist"] = data[date]["MACD_Hist"]
 
 #     dates = list(sorted(dates))
 #     for index, date in enumerate(dates):
@@ -133,30 +131,30 @@ def calc_returns(fundata, indicator):
 #                           yesterday_s_close) / yesterday_s_close
 # #  nothing to work with for the first entry
 #         if index == 0:
-#             rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value
-#             rsi_returns[date]["rsi_return"] = 0
+#             macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue
+#             macd_hist_returns[date]["mhreturn"] = 0
 # #  if yesterday's hist > 0 get return
-#         elif float(rsi_returns[dates[index - 1]]["RSI"]) >= 0:
+#         elif float(macd_hist_returns[dates[index - 1]]["MACD_Hist"]) >= 0:
 #             rsi_days_held += 1
 #             rsi_rightable_days += 1
 #             if today_s_change >= 0:
 #                 next_days_right += 1
 #             if index > 1:
 #                 # buy in at opening value
-#                 if not(float(rsi_returns[dates[index - 2]]
-#                        ["RSI"]) > 0):
-#                     rsi_returns[date]["rsi_return"] = today_s_first_change(
+#                 if not(float(macd_hist_returns[dates[index - 2]]
+#                        ["MACD_Hist"]) > 0):
+#                     macd_hist_returns[date]["mhreturn"] = today_s_first_change(
 #                         data, date, yesterday_s_close)
-#                     rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value * (
+#                     macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue * (
 #                         1 + today_s_first_change(data, date, yesterday_s_close))
 #                 else:  # keep returns close to close
-#                     rsi_returns[date]["rsi_return"] = today_s_change
-#                     rsi_returns[date][
-#                         "rsi_value"] = yesterday_s_rsi_value * (1 + today_s_change)
+#                     macd_hist_returns[date]["mhreturn"] = today_s_change
+#                     macd_hist_returns[date][
+#                         "mhvalue"] = yesterday_s_mhvalue * (1 + today_s_change)
 #             else:  # index == 1: buy in
-#                 rsi_returns[date]["rsi_return"] = today_s_first_change(
+#                 macd_hist_returns[date]["mhreturn"] = today_s_first_change(
 #                     data, date, yesterday_s_close)
-#                 rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value * \
+#                 macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue * \
 #                     (1 + today_s_first_change(data, date, yesterday_s_close))
 #         else:  # yesterday_s_macd_hist < 0 - sell or don't buy
 #             if index > 1:
@@ -164,183 +162,100 @@ def calc_returns(fundata, indicator):
 #                 if today_s_change < 0:
 #                     next_days_right += 1
 #                 # sell takes the overnight change
-#                 if (float(rsi_returns[dates[index - 2]]
-#                           ["RSI"]) > 0):
-#                     rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value * (
+#                 if (float(macd_hist_returns[dates[index - 2]]
+#                           ["MACD_Hist"]) > 0):
+#                     macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue * (
 #                         1 + overnight_change(data, date, yesterday_s_close))
-#                     rsi_returns[date]["rsi_return"] = overnight_change(
+#                     macd_hist_returns[date]["mhreturn"] = overnight_change(
 #                         data, date, yesterday_s_close)
 #                 else:  # nothing
-#                     rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value
-#                     rsi_returns[date]["rsi_return"] = 0
+#                     macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue
+#                     macd_hist_returns[date]["mhreturn"] = 0
 #             else:  # index == 1: nothing
-#                 rsi_returns[date]["rsi_value"] = yesterday_s_rsi_value
-#                 rsi_returns[date]["rsi_return"] = 0
+#                 macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue
+#                 macd_hist_returns[date]["mhreturn"] = 0
 
 # #  save yesterday's close, yesterday's accrued value
 #         yesterday_s_close = float(data[date]["4. close"])
-#         yesterday_s_rsi_value = rsi_returns[date]["rsi_value"]
-#     rsi_returns["rsi meta"]["number_of_days"] = (
-#         parser.parse(dates[-1]) - parser.parse(dates[0])).days
+#         yesterday_s_mhvalue = macd_hist_returns[date]["mhvalue"]
 #     number_of_days = (parser.parse(dates[-1]) - parser.parse(dates[0])).days
+
 #     if number_of_days > 0:
-#         rsi_returns["rsi meta"]["rsi_average_return_rate"] = 365 * (
-#             yesterday_s_rsi_value - 1) / number_of_days
+#         summary = 365 * (yesterday_s_mhvalue - 1) / number_of_days
 #     else:
-#         rsi_returns["rsi meta"]["rsi_average_return_rate"] = 0
-#     rsi_returns["rsi meta"]["rsi_days_held"] = rsi_days_held
-#     rsi_returns["rsi meta"]["days_right_rate"] = next_days_right / rsi_rightable_days
-#     return(rsi_returns)
+#         summary = 0
+
+#     return(macd_hist_returns, summary, rsi_days_held, number_of_days,
+#            next_days_right / rsi_rightable_days)
 
 
-# Assumes that we trade at the opening value after deciding ovrnight to buy or sell
-def calc_return_based_on_daily_macd_hist(data):
-    # print(data)
-    macd_hist_returns = {}  # struct [date]["MACD_Hist"],["mhreturn"],["mhvalue"]
-    dates = []
-    yesterday_s_close = 1
-    yesterday_s_mhvalue = 1
-    rsi_days_held = 0
-    next_days_right = 0
-    rsi_rightable_days = 0
-# skip dates when the mdh value is not available
-    for date in data.keys():
-        if "MACD_Hist" in data[date].keys():
-            dates.append(date)
-            macd_hist_returns[date] = {}
-            macd_hist_returns[date]["MACD_Hist"] = data[date]["MACD_Hist"]
+# def calc_return_based_on_daily_stoch(data):
+#     stoch_returns = {}
+#     dates = list(sorted(data.keys()))
+#     yesterday_s_slow_d = 0
+#     yesterday_s_slow_k = 0
+#     yesterday_s_close = 1
+#     yesterday_s_value = 1
+#     for date in dates:
+#         stoch_returns[date] = {}
+#         stoch_returns[date]["hold"] = (
+#             (yesterday_s_slow_d - yesterday_s_slow_k) > 0)
 
-    dates = list(sorted(dates))
-    for index, date in enumerate(dates):
-        today_s_change = (float(data[date]["4. close"]) -
-                          yesterday_s_close) / yesterday_s_close
-#  nothing to work with for the first entry
-        if index == 0:
-            macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue
-            macd_hist_returns[date]["mhreturn"] = 0
-#  if yesterday's hist > 0 get return
-        elif float(macd_hist_returns[dates[index - 1]]["MACD_Hist"]) >= 0:
-            rsi_days_held += 1
-            rsi_rightable_days += 1
-            if today_s_change >= 0:
-                next_days_right += 1
-            if index > 1:
-                # buy in at opening value
-                if not(float(macd_hist_returns[dates[index - 2]]
-                       ["MACD_Hist"]) > 0):
-                    macd_hist_returns[date]["mhreturn"] = today_s_first_change(
-                        data, date, yesterday_s_close)
-                    macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue * (
-                        1 + today_s_first_change(data, date, yesterday_s_close))
-                else:  # keep returns close to close
-                    macd_hist_returns[date]["mhreturn"] = today_s_change
-                    macd_hist_returns[date][
-                        "mhvalue"] = yesterday_s_mhvalue * (1 + today_s_change)
-            else:  # index == 1: buy in
-                macd_hist_returns[date]["mhreturn"] = today_s_first_change(
-                    data, date, yesterday_s_close)
-                macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue * \
-                    (1 + today_s_first_change(data, date, yesterday_s_close))
-        else:  # yesterday_s_macd_hist < 0 - sell or don't buy
-            if index > 1:
-                rsi_rightable_days += 1
-                if today_s_change < 0:
-                    next_days_right += 1
-                # sell takes the overnight change
-                if (float(macd_hist_returns[dates[index - 2]]
-                          ["MACD_Hist"]) > 0):
-                    macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue * (
-                        1 + overnight_change(data, date, yesterday_s_close))
-                    macd_hist_returns[date]["mhreturn"] = overnight_change(
-                        data, date, yesterday_s_close)
-                else:  # nothing
-                    macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue
-                    macd_hist_returns[date]["mhreturn"] = 0
-            else:  # index == 1: nothing
-                macd_hist_returns[date]["mhvalue"] = yesterday_s_mhvalue
-                macd_hist_returns[date]["mhreturn"] = 0
+#         today_s_change = (
+#             float(data[date]["4. close"]) - yesterday_s_close) / yesterday_s_close
 
-#  save yesterday's close, yesterday's accrued value
-        yesterday_s_close = float(data[date]["4. close"])
-        yesterday_s_mhvalue = macd_hist_returns[date]["mhvalue"]
-    number_of_days = (parser.parse(dates[-1]) - parser.parse(dates[0])).days
+#         if stoch_returns[date]["hold"]:
+#             stoch_returns[date]["value"] = yesterday_s_value * \
+#                 (1 + today_s_change)
+#         else:
+#             stoch_returns[date]["value"] = yesterday_s_value
 
-    if number_of_days > 0:
-        summary = 365 * (yesterday_s_mhvalue - 1) / number_of_days
-    else:
-        summary = 0
+#         yesterday_s_close = float(data[date]["4. close"])
 
-    return(macd_hist_returns, summary, rsi_days_held, number_of_days,
-           next_days_right / rsi_rightable_days)
+#         if "SlowD" in data[date].keys():
+#             yesterday_s_slow_d = float(data[date]["SlowD"])
+#         if "SlowK" in data[date].keys():
+#             yesterday_s_slow_d = float(data[date]["SlowK"])
+
+#         yesterday_s_value = stoch_returns[date]["value"]
+
+#         number_of_days = (parser.parse(
+#             dates[-1]) - parser.parse(dates[0])).days
+
+#     summary = 365 * (yesterday_s_value - 1) / number_of_days
+
+#     return(stoch_returns, summary)
 
 
-def calc_return_based_on_daily_stoch(data):
-    stoch_returns = {}
-    dates = list(sorted(data.keys()))
-    yesterday_s_slow_d = 0
-    yesterday_s_slow_k = 0
-    yesterday_s_close = 1
-    yesterday_s_value = 1
-    for date in dates:
-        stoch_returns[date] = {}
-        stoch_returns[date]["hold"] = (
-            (yesterday_s_slow_d - yesterday_s_slow_k) > 0)
+# def calc_return_based_on_daily_stoch_and_macd_hist(
+#         data, macd_hist_returns, stoch_returns):
+#     snm_returns = {}
+#     dates = list(sorted(data.keys()))
+#     yesterday_s_close = 1
+#     yesterday_s_value = 1
+#     for date in dates:
+#         snm_returns[date] = {}
+#         snm_returns[date]["hold"] = macd_hist_returns[
+#             date]["hold"] and stoch_returns[date]["hold"]
 
-        today_s_change = (
-            float(data[date]["4. close"]) - yesterday_s_close) / yesterday_s_close
+#         today_s_change = (
+#             float(data[date]["4. close"]) - yesterday_s_close) / yesterday_s_close
 
-        if stoch_returns[date]["hold"]:
-            stoch_returns[date]["value"] = yesterday_s_value * \
-                (1 + today_s_change)
-        else:
-            stoch_returns[date]["value"] = yesterday_s_value
+#         if snm_returns[date]["hold"]:
+#             snm_returns[date]["value"] = yesterday_s_value * \
+#                 (1 + today_s_change)
+#         else:
+#             snm_returns[date]["value"] = yesterday_s_value
 
-        yesterday_s_close = float(data[date]["4. close"])
+#         yesterday_s_close = float(data[date]["4. close"])
+#         yesterday_s_value = snm_returns[date]["value"]
 
-        if "SlowD" in data[date].keys():
-            yesterday_s_slow_d = float(data[date]["SlowD"])
-        if "SlowK" in data[date].keys():
-            yesterday_s_slow_d = float(data[date]["SlowK"])
+#         number_of_days = (parser.parse(
+#             dates[-1]) - parser.parse(dates[0])).days
 
-        yesterday_s_value = stoch_returns[date]["value"]
+#     summary = 365 * (yesterday_s_value - 1) / number_of_days
 
-        number_of_days = (parser.parse(
-            dates[-1]) - parser.parse(dates[0])).days
-
-    summary = 365 * (yesterday_s_value - 1) / number_of_days
-
-    return(stoch_returns, summary)
-
-
-def calc_return_based_on_daily_stoch_and_macd_hist(
-        data, macd_hist_returns, stoch_returns):
-    snm_returns = {}
-    dates = list(sorted(data.keys()))
-    yesterday_s_close = 1
-    yesterday_s_value = 1
-    for date in dates:
-        snm_returns[date] = {}
-        snm_returns[date]["hold"] = macd_hist_returns[
-            date]["hold"] and stoch_returns[date]["hold"]
-
-        today_s_change = (
-            float(data[date]["4. close"]) - yesterday_s_close) / yesterday_s_close
-
-        if snm_returns[date]["hold"]:
-            snm_returns[date]["value"] = yesterday_s_value * \
-                (1 + today_s_change)
-        else:
-            snm_returns[date]["value"] = yesterday_s_value
-
-        yesterday_s_close = float(data[date]["4. close"])
-        yesterday_s_value = snm_returns[date]["value"]
-
-        number_of_days = (parser.parse(
-            dates[-1]) - parser.parse(dates[0])).days
-
-    summary = 365 * (yesterday_s_value - 1) / number_of_days
-
-    return(snm_returns, summary)
+#     return(snm_returns, summary)
 
 
 def simple_return(data):
@@ -363,7 +278,7 @@ def simple_return(data):
                 float(data[date]["4. close"]) - yesterday_s_close) / yesterday_s_close
 
         buy_and_hold[date]["return since" + str(dates[0])] = change
-        buy_and_hold[date]["value"] = 1 + change
+        buy_and_hold[date]["buy and hold value"] = 1 + change
         buy_and_hold[date]["return"] = today_s_change
         yesterday_s_close = float(data[date]["4. close"])
 
@@ -371,47 +286,47 @@ def simple_return(data):
     return buy_and_hold, average_simple_return
 
 
-def build_returns(symbol, data, returns):
-    print("building", symbol, "returns object")
-    if not(symbol in returns.keys()):  # object setup
-        returns[symbol] = {}
-    if not("summary" in returns.keys()):
-        returns["summary"] = {}
+# def build_returns(symbol, data, returns):
+#     print("building", symbol, "returns object")
+#     if not(symbol in returns.keys()):  # object setup
+#         returns[symbol] = {}
+#     if not("summary" in returns.keys()):
+#         returns["summary"] = {}
 
-    mhdaily, mhaverage, rsi_days_held = calc_return_based_on_daily_macd_hist(data)
-    srdaily, sraverage = simple_return(data)
+#     mhdaily, mhaverage, rsi_days_held = calc_return_based_on_daily_macd_hist(data)
+#     srdaily, sraverage = simple_return(data)
 
-    dates = list(sorted(data.keys()))
-    for date in dates:
-        if date in mhdaily.keys():
-            if date in returns[symbol].keys():
-                returns[symbol][date] = {**returns[symbol][date], **mhdaily[date]}
-            else:
-                returns[symbol][date] = mhdaily[date]  # redundant?
-        if date in srdaily.keys():
-            if date in returns[symbol].keys():
-                returns[symbol][date] = {**returns[symbol][date], **srdaily[date]}
+#     dates = list(sorted(data.keys()))
+#     for date in dates:
+#         if date in mhdaily.keys():
+#             if date in returns[symbol].keys():
+#                 returns[symbol][date] = {**returns[symbol][date], **mhdaily[date]}
+#             else:
+#                 returns[symbol][date] = mhdaily[date]  # redundant?
+#         if date in srdaily.keys():
+#             if date in returns[symbol].keys():
+#                 returns[symbol][date] = {**returns[symbol][date], **srdaily[date]}
 
-    returns["summary"][symbol + " return based on daily macd hist"] = mhaverage
-    return returns
+#     returns["summary"][symbol + " return based on daily macd hist"] = mhaverage
+#     return returns
 
 
-def work_with_files():
-    try:
-        f = open("./json/processed/returns.json")
-        returns = json.load(f)
-        f.close()
-    except IOError:
-        returns = {}
+# def work_with_files():
+#     try:
+#         f = open("./json/processed/returns.json")
+#         returns = json.load(f)
+#         f.close()
+#     except IOError:
+#         returns = {}
 
-    for symbol in symbols:
-        filename = "./json/raw/" + symbol + ".json"
-        f = open(filename)
-        data = json.load(f)
-        f.close()
+#     for symbol in symbols:
+#         filename = "./json/raw/" + symbol + ".json"
+#         f = open(filename)
+#         data = json.load(f)
+#         f.close()
 
-        returns = build_returns(symbol, data, returns)
+#         returns = build_returns(symbol, data, returns)
 
-    with open("./json/processed/returns.json", "w") as writeJSON:
-        json.dump(returns, writeJSON)
-# python -c 'from analysis import work_with_files; work_with_files()'
+#     with open("./json/processed/returns.json", "w") as writeJSON:
+#         json.dump(returns, writeJSON)
+# # python -c 'from analysis import work_with_files; work_with_files()'

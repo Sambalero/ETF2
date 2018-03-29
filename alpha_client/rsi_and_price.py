@@ -1,9 +1,10 @@
 # Average return on day-after macd signal hold compared to average return timespan
 from api import priceset, macds, rsis
 from client import build_data_object, call_api
-from config import symbols, daterange
+from config import symbols, daterange, indicators
 import json
-from analysis import calc_return_based_on_daily_macd_hist, simple_return, calc_rsi_returns, calc_returns
+from analysis import simple_return, calc_returns
+# from analysis import calc_return_based_on_daily_macd_hist, , calc_rsi_returns
 
 
 # compares macd hist bsed investment vs buy-and-hold strategy
@@ -38,28 +39,14 @@ def rsi_and_price_data(symbol, start=0, **kwargs):  # end expected in kwargs
     return(summary, per_day, average_simple_return)
 
 
-# from plot 140
-# build pm data for missing fund for plot
-# ???? add to cumulative calcs ????
-def add_to_pm_funds_data(symbol):
-    start = daterange[0]
-    end = daterange[1]
-    fundata = get_fundata(symbol)
-    if start and end:
-        fundata = (rsi_v_price(symbol, fundata, start, end=end))
-    else:
-        fundata = (rsi_v_price(symbol, fundata))
-    return fundata
-
-
 # compares macd hist based investment vs buy-and-hold strategy
 # input: fund data, date range
 # call analysis methods for calculated values
 # append daily return values to fundata object
 # output final values to stdout and return everything
-def rsi_v_price(symbol, fund_data, start='0', **kwargs):  # end expected in kwargs
+def indicator_v_price(symbol, indicator, fund_data, start='0', **kwargs):  # end expected in kwargs
     dates = []
-    indicator = "RSI"
+    # indicator = "RSI"
     fundata = {}  # a new object that only covers the given range
     for date in fund_data.keys():
         if int(date.replace("-", "")) >= int(start.replace("-", "")):
@@ -69,32 +56,33 @@ def rsi_v_price(symbol, fund_data, start='0', **kwargs):  # end expected in kwar
                 dates.append(date)
                 fundata[date] = fund_data[date]
     dates = list(sorted(dates))
-    # rsi_returns = calc_rsi_returns(fundata)
-    rsi_returns = calc_returns(fundata, indicator)
+    # returns = calc_rsi_returns(fundata)
+    returns = calc_returns(fundata, indicator)
     buy_and_hold, average_simple_return = simple_return(fundata)
     initial_price = float(fundata[dates[0]]["4. close"])
-    print(rsi_returns["RSImeta"].keys())
+    meta = indicator + "meta"
+    print(returns[meta].keys())
     for date in dates:
-        if date in rsi_returns.keys():
-            fundata[date][indicator + "return"] = rsi_returns[date][indicator + "return"]
-            fundata[date][indicator + "value"] = rsi_returns[date][indicator + "value"]
-            fundata[date]["buy and hold value"] = buy_and_hold[date]["value"]
+        if date in returns.keys():
+            fundata[date][indicator + "return"] = returns[date][indicator + "return"]
+            fundata[date][indicator + "value"] = returns[date][indicator + "value"]
+            fundata[date]["buy and hold value"] = buy_and_hold[date]["buy and hold value"]
             fundata[date]["return"] = buy_and_hold[date]["return"]
             fundata[date]["price"] = float(fundata[date]["4. close"]) / initial_price
     print(symbol, dates[0], dates[-1])
-    print(symbol, "Average rate of return using RSI:", rsi_returns["RSImeta"]["RSI average_return_rate"])
-    per_day = 365 * (rsi_returns[dates[-2]]["RSIvalue"] - 1) / (rsi_returns["RSImeta"]["RSI days_held"] - 1)
-    print(symbol, "Average per-day-held return using RSI:", rsi_returns["RSImeta"]["RSI average_return_rate"])
-    print(symbol, "Average_simple_return using RSI:", average_simple_return)
-    print(symbol, "RSI days_right_rate:", rsi_returns["RSImeta"]["RSI days_right_rate"])
+    print(symbol, "Average rate of return using " + indicator + ": ", returns[meta][indicator + " average_return_rate"])
+    per_day = 365 * (returns[dates[-2]][indicator + "value"] - 1) / (returns[meta][indicator + " days_held"] - 1)
+    print(symbol, "Average per-day-held return using " + indicator + ": ", returns[meta][indicator + " average_return_rate"])
+    print(symbol, "Average_simple_return using " + indicator + ": ", average_simple_return)
+    print(symbol, "RSI days_right_rate:", returns[meta][indicator + " days_right_rate"])
 
     fundata["meta"] = {}
-    fundata["meta"]["Average rate of return using RSI"] = rsi_returns["RSImeta"]["RSI average_return_rate"]
-    fundata["meta"]["Average per-day-held return using RSI"] = per_day
-    fundata["meta"]["RSI days held"] = rsi_returns["RSImeta"]["RSI days_held"]
+    fundata["meta"]["Average rate of return using " + indicator] = returns[meta][indicator + " average_return_rate"]
+    fundata["meta"]["Average per-day-held return using " + indicator] = per_day
+    fundata["meta"]["Number of days held"] = returns[meta][indicator + " days_held"]
     fundata["meta"]["Average_simple_return"] = average_simple_return
-    fundata["meta"]["Length of time averaged"] = rsi_returns["RSImeta"]["RSI number_of_days"]
-    fundata["meta"]["Next day right rate"] = rsi_returns["RSImeta"]["RSI days_right_rate"]
+    fundata["meta"]["Length of time averaged"] = returns[meta][indicator + " number_of_days"]
+    fundata["meta"]["Next day right rate"] = returns[meta][indicator + " days_right_rate"]
     fundata["meta"]["symbol"] = symbol
     fundata["meta"]["date range"] = (dates[0], dates[-1])
     return(fundata)
@@ -114,50 +102,42 @@ def get_fundata(symbol):
     return fundata
 
 
-def main():
-    n, amr, day, asr = 0, 0, 0, 0
-    for symbol in symbols:
-        (summary, per_day, average_simple_return) = rsi_and_price_data(symbol)
-        amr += summary
-        day += per_day
-        asr += average_simple_return
-        n += 1
-    print("Average rate of return using MACD_Hist:", amr / n)
-    print("Average per-day-held return using MACD_Hist:", day / n)
-    print("Average_simple_return:", asr / n)
-
-
-# Use data from files rather than call the api.
+# Build processed data object from saved api responses
 # But call the api if you have to
 # write to files, too.
 def work_with_files():
-    start = daterange[0]
-    end = daterange[1]
-    n, amr, day, asr = 0, 0, 0, 0
-    rsi_and_price = {}
-    for symbol in symbols:
-        fundata = get_fundata(symbol)
-        if start and end:
-            fundata = (rsi_v_price(symbol, fundata, start, end=end))  
-        else:
-            fundata = (rsi_v_price(symbol, fundata))
-        amr += fundata["meta"]["Average rate of return using RSI"]
-        day += fundata["meta"]["Average per-day-held return using RSI"]
-        asr += fundata["meta"]["Average_simple_return"]
-        n += 1
-        rsi_and_price[symbol] = fundata
-# These average values are highly imprecise but that's fixable.
-    print("Average rate of return using RSI:", amr / n)
-    print("Average per-day-held return using RSI:", day / n)
-    print("Average_simple_return:", asr / n)
-    rsi_and_price["Average rate of return using RSI:"] = amr / n
-    rsi_and_price["Average per-day-held return using MACD_Hist:"] = day / n
-    rsi_and_price["Average_simple_return:"] = asr / n
-    if not(start and end): 
-        (start, end) = fundata["meta"]["date range"]
-    filename = "./json/processed/pr " + start + " - " + end + ".json"
+    returns = {}
+    for indicator in indicators:
+        start = daterange[0]
+        end = daterange[1]
+        n, amr, day, asr = 0, 0, 0, 0
+        returns[indicator] = {}
+        for symbol in symbols:
+            returns[symbol] = {}
+            fundata = get_fundata(symbol)
+            if start and end:
+                fundata = (indicator_v_price(symbol, indicator, fundata, start, end=end))  
+            else:
+                fundata = (indicator_v_price(symbol, indicator, fundata))
+            amr += fundata["meta"]["Average rate of return using " + indicator]
+            day += fundata["meta"]["Average per-day-held return using " + indicator]
+            asr += fundata["meta"]["Average_simple_return"]  # ,,,,,,,,,,,,,,,,pull this out
+            n += 1
+            returns[symbol][indicator] = fundata
+    # These average values are highly imprecise but that's fixable.
+        print("Average rate of return using " + indicator + " :", amr / n)
+        print("Average per-day-held return using " + indicator + " :", day / n)
+        print("Average_simple_return:", asr / n)
+        returns[indicator]["Average rate of return using " + indicator + " :"] = amr / n
+        returns[indicator]["Average per-day-held return using " + indicator + " :"] = day / n
+        returns[indicator]["Average_simple_return:"] = asr / n
+        # if not(start and end):
+        #     (start, end) = fundata["meta"]["date range"]
+        # filename = "./json/processed/returns " + start + " - " + end + ".json"
+    # import pdb; pdb.set_trace()
+    filename = "./json/processed/returns.json"
     with open(filename, "w") as writeJSON:
-        json.dump(rsi_and_price, writeJSON)
+        json.dump(returns, writeJSON)
 
 # python -c 'from rsi_and_price import work_with_files; work_with_files()'
 # python -c 'from rsi_and_price import main; main()'
