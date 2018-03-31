@@ -17,31 +17,31 @@ def overnight_change(data, date, yesterday_s_close):  # helpers
 def calc_returns(fundata, indicator):
     # print(fundata)
     returns = {}  # struct [date][indicator],[net_return],[value];
-    meta = indicator + "meta"
-    returns[meta] = {}  # helper???
-    # ["rsi_average_return_rate"],["days_held"],["days_right_rate"],["number_of_days"]
+    # returns[meta] = {} # ["average_return_rate"],["days_held"],["days_right_rate"],["number_of_days"]
+    if not("meta" in fundata.keys()):
+        returns["meta"] = {}
+    else:
+        returns["meta"] = fundata["meta"]
+    returns["meta"][indicator] = {}
     dates = []
-    for date in fundata.keys():
-        if indicator in fundata[date].keys():
-            dates.append(date)
-            returns[date] = {}
-            returns[date][indicator] = fundata[date][indicator]
     yesterday_s_close = 1
     yesterday_s_value = 1
     value = 1
     days_held = 0
     next_days_right = 0
     rightable_days = 0   # maarket days?
-# skip dates when the mdh value is not available
+    average_return_rate = indicator + " average_return_rate"
+    number_of_days = indicator + " number_of_days"
+    value = indicator + " value"
+    net_return = indicator + " return"
+# only include dates that have the indicator
     for date in fundata.keys():  # helpers fundates
         if indicator in fundata[date].keys():
             dates.append(date)
             returns[date] = {}
             returns[date][indicator] = fundata[date][indicator]
-
     dates = list(sorted(dates))
-    value = indicator + "value"
-    net_return = indicator + "return"
+# calc daily return and accumulated value
     for index, date in enumerate(dates):
         today_s_change = (float(fundata[date]["4. close"]) -
                           yesterday_s_close) / yesterday_s_close
@@ -72,7 +72,7 @@ def calc_returns(fundata, indicator):
                     fundata, date, yesterday_s_close)
                 returns[date][value] = yesterday_s_value * \
                     (1 + today_s_first_change(fundata, date, yesterday_s_close))
-        else:  # yesterday_s_macd_hist < 0 - sell or don't buy
+        else:  # yesterday_s_mindicaator < 0 - sell or don't buy
             if index > 1:
                 rightable_days += 1
                 if today_s_change < 0:
@@ -94,17 +94,21 @@ def calc_returns(fundata, indicator):
 #  save yesterday's close, yesterday's accrued value
         yesterday_s_close = float(fundata[date]["4. close"])
         yesterday_s_value = returns[date][value]
-    average_return_rate = indicator + " average_return_rate"
-    number_of_days = indicator + " number_of_days"
-    returns[meta][number_of_days] = (
+    
+    returns["meta"][indicator]["date_range"] = (dates[0], dates[-1])
+    returns["meta"][indicator]["number_of_days"] = (
         parser.parse(dates[-1]) - parser.parse(dates[0])).days
-    if returns[meta][number_of_days] > 0:
-        returns[meta][average_return_rate] = 365 * (
-            yesterday_s_value - 1) / returns[meta][number_of_days]
+    if returns["meta"][indicator]["number_of_days"] > 0:
+        returns["meta"][indicator]["average_return_rate"] = round(365 * (
+            yesterday_s_value - 1) / returns["meta"][indicator]["number_of_days"], 2)
     else:
-        returns[meta][average_return_rate] = 0
-    returns[meta][indicator + " days_held"] = days_held
-    returns[meta][indicator + " days_right_rate"] = next_days_right / rightable_days
+        returns["meta"][indicator]["average_return_rate"] = 0
+    returns["meta"][indicator]["days_held"] = days_held
+    returns["meta"][indicator]["days_right_rate"] = round(next_days_right / rightable_days, 3)
+    returns["meta"][indicator]["market days"] = rightable_days
+    returns["meta"][indicator]["per day return"] = round(365 * (
+        yesterday_s_value - 1) / days_held, 2)
+    returns["meta"][indicator][indicator + " value"] = round(yesterday_s_value, 3)
     return(returns)
 
 
