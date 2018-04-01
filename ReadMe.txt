@@ -15,40 +15,12 @@ Call API, write to files:
 (pyenv) ~/Alpha_client/alpha_client 
 $ python -c 'from client import work_with_files; work_with_files()'
 
-/Analyze API data & calculate returns, save to a cumulative file:
-/(pyenv) ~/Alpha_client/alpha_client 
-/$ python -c 'from analysis import work_with_files; work_with_files()'  
-/			File "C:\Users\Owner\Documents\prog\PY\Alpha_client\alpha_client\analysis.py", line 381, in build_returns
-/			    mhdaily, mhaverage, rsi_days_held = calc_return_based_on_daily_macd_hist(data)
-/			ValueError: too many values to unpack (expected 3)
-
-Compare macd hist based investment vs buy-and-hold strategy, 
-call api, no first buy/sell delay, print to stdout
+Build a performance summary of various strategies based on technical indicators and save to file:
 (pyenv) ~/Alpha_client/alpha_client 
-$ python -c 'from price_and_macd import main; main()'
-			  File "C:\Users\Owner\Documents\prog\PY\Alpha_client\alpha_client\price_and_macd.py", line 31, in price_and_macd_data
-			    calc_return_based_on_daily_macd_hist(prices))
-			ValueError: too many values to unpack (expected 3)
+$ python -c 'from build_summary import build_processed_data; build_processed_data()'
 
-Compare macd hist based investment vs buy-and-hold strategy, 
-trade at the opening value after deciding overnight to buy or sell
-read from and save to files:
-(pyenv) ~/Alpha_client/alpha_client 
-$ python -c 'from price_and_macd import work_with_files; work_with_files()'
 
-Plot  macd hist, macd hist based investment value and price from returns file; save plot
+Plot has not been rewritten to work with new methods
 (pyenv) ~/Alpha_client/alpha_client 
 $ python -c 'from plot import work_with_files; work_with_files()'
 
-Compare RSI hist based investment vs buy-and-hold strategy, 
-trade at the opening value after deciding overnight to buy or sell
-read from and save to files:
-(pyenv) ~/Alpha_client/alpha_client 
-$ python -c 'from rsi_and_price import work_with_files; work_with_files()'
-			  File "<string>", line 1, in <module>
-			  File "C:\Users\Owner\Documents\prog\PY\Alpha_client\alpha_client\rsi_and_price.py", line 6, in <module>
-			    from analysis import calc_return_based_on_daily_macd_hist, simple_return, calc_rsi_returns, calc_returns
-			ImportError: cannot import name 'calc_rsi_returns'
-Fetch,build and plot mdh, md value and price data for each fund in config
-(pyenv) ~/Alpha_client/alpha_client 
-$ python main.py
