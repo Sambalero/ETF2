@@ -9,13 +9,13 @@ I am hoping to assess the validity of a series of investment intuitions I have a
 3. Funds have personalities
 4. Historical returns are the best unbiased indicator of future performance
 
-Information about technical indicators can be found using links in the https://www.alphavantage.co docs page
+Information about technical strategems can be found using links in the https://www.alphavantage.co docs page
 
 Call API, write to files:
 (pyenv) ~/Alpha_client/alpha_client 
 $ python -c 'from client import work_with_files; work_with_files()'
 
-Build a performance summary of various strategies based on technical indicators and save to file:
+Build a performance summary of various strategies based on technical strategems and save to file:
 (pyenv) ~/Alpha_client/alpha_client 
 $ python -c 'from build_summary import build_processed_data; build_processed_data()'
 
