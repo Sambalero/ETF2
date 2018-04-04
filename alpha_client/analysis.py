@@ -1,3 +1,9 @@
+
+
+def calc_rate_of_return(start, end, days):
+    return(end / start) ** (1 / days)
+
+
 def add_today_s_change(fundata, indicator, date, yesterday):
     today_s_change = (
         (float(fundata[date]["4. close"]) -
@@ -161,11 +167,14 @@ def append_indicator_summary(fundata, indicator, dates):
         fundata["meta"][indicator]["average per day return"] = 0
 
     if fundata["meta"]["number_of_days"] != 0:
-        fundata["meta"][indicator]["average_return_rate"] = round(36500 * (
+        fundata["meta"][indicator]["average_annual_return"] = round(36500 * (
             fundata[dates[-1]][indicator + "_value"] - 1) /
             fundata["meta"]["number_of_days"], 5)
     else:
         fundata["meta"][indicator]["average_return_rate"] = 0
+
+    fundata["meta"][indicator]["daily_return_rate"] = calc_rate_of_return(
+        1, fundata[dates[-1]][indicator + "_value"], len(dates) - 1)
 
     return fundata
 

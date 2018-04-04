@@ -1,15 +1,8 @@
 from client import build_data_object, call_api
 from config import symbols, daterange, strategems, all_the_keys
 import json
-from analysis import calc_returns
+from analysis import calc_returns, dates_from_keys, calc_rate_of_return
 from dateutil import parser
-
-
-def dates_from_keys(dates):
-    dates = list(sorted(dates))
-    if "meta" in dates:
-        dates.remove("meta")
-    return dates
 
 
 # get return values by given fund and indicator
@@ -88,6 +81,10 @@ def include_meta_data(fundata):
     fundata["meta"]["total return"] = round(calc_return(
         float(fundata["meta"]["starting price"]),
         float(fundata["meta"]["ending price"])), 3)
+    fundata["meta"]["daily rate"] = round(calc_rate_of_return(
+        float(fundata["meta"]["starting price"]),
+        float(fundata["meta"]["ending price"]),
+        fundata["meta"]["number_of_days"]), 10)
     return fundata
 
 
@@ -125,6 +122,7 @@ def append_summary(fundsdata, indicator):
         sum_of_returns = 0
         sum_of_next_days_right = 0
         sum_of_rightable_days = 0
+        sum_of_cagr_x_days = 0
 
         for symbol in symbols:
             r = fundsdata[symbol]['meta'][indicator][indicator + "_value"] - 1
@@ -134,6 +132,9 @@ def append_summary(fundsdata, indicator):
             sum_of_next_days_right += fundsdata[symbol]['meta'][indicator]["days_right"]
             sum_of_rightable_days += (
                 fundsdata[symbol]['meta']["market_days"] - 1)
+            sum_of_cagr_x_days += (
+                fundsdata[symbol]['meta'][indicator]["daily_return_rate"] *
+                fundsdata[symbol]['meta']["number_of_days"])
 
         if sum_of_number_of_days != 0:
             fundsdata[indicator]['meta']["average_return_rate"] = round(
@@ -148,10 +149,16 @@ def append_summary(fundsdata, indicator):
             fundsdata[indicator]['meta']["next_days_right_rate"] = 0
 
         if sum_of_days_held != 0:
-            fundsdata[indicator]['meta']["per_day_return_rate"] = round(
+            fundsdata[indicator]['meta']["annualized_per_day_return"] = round(
                 (36500 * r / sum_of_days_held), 5)
         else:
-            fundsdata[indicator]['meta']["per_day_return_rate"] = 0
+            fundsdata[indicator]['meta']["annualized_per_day_return"] = 0
+
+        if sum_of_number_of_days != 0:
+            fundsdata[indicator]['meta']["averaged CAGR"] = round(
+                (sum_of_cagr_x_days / sum_of_number_of_days), 5)
+        else:
+            fundsdata[indicator]['meta']["averaged CAGR"] = 0
 
     return fundsdata
 
