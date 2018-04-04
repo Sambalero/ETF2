@@ -68,12 +68,26 @@ def fund_data_in_range(fun_data):
     return fundata
 
 
+def calc_return(start, end):
+    if start > end:
+        return ((end - start) / start)
+    else:
+        return (((end - start) / start) - 1)
+
+
 def include_meta_data(fundata):
     dates = dates_from_keys(fundata.keys())
     fundata["meta"] = {}
-    fundata["meta"]["date_range"] = (dates[0], dates[-1])
+    fundata["meta"]["start"] = dates[0]
+    fundata["meta"]["starting price"] = fundata[dates[0]]["4. close"]
+    fundata["meta"]["end"] = dates[-1]
+    fundata["meta"]["ending price"] = fundata[dates[-1]]["4. close"]
     fundata["meta"]["number_of_days"] = (
         parser.parse(dates[-1]) - parser.parse(dates[0])).days
+    fundata["meta"]["market_days"] = len(dates)
+    fundata["meta"]["total return"] = round(calc_return(
+        float(fundata["meta"]["starting price"]),
+        float(fundata["meta"]["ending price"])), 3)
     return fundata
 
 
@@ -106,35 +120,43 @@ def append_summary(fundsdata, indicator):
     for indicator in strategems:
         fundsdata[indicator] = {}
         fundsdata[indicator]['meta'] = {}
-        return_x_days_held = 0
-        next_days_right_x_days_held = 0
-        return_x_number_of_days = 0
         sum_of_days_held = 0
         sum_of_number_of_days = 0
+        sum_of_returns = 0
+        sum_of_next_days_right = 0
+        sum_of_rightable_days = 0
 
         for symbol in symbols:
             r = fundsdata[symbol]['meta'][indicator][indicator + "_value"] - 1
-            return_x_days_held += (
-                r * fundsdata[symbol]['meta'][indicator]["days_held"])
-            return_x_number_of_days += r * fundsdata[symbol]['meta']["number_of_days"]
-            next_days_right_x_days_held += (
-                fundsdata[symbol]['meta'][indicator]["days_held"] *
-                fundsdata[symbol]['meta'][indicator]["days_right"])
+            sum_of_returns += r
             sum_of_days_held += fundsdata[symbol]['meta'][indicator]["days_held"]
             sum_of_number_of_days += fundsdata[symbol]['meta']["number_of_days"]
+            sum_of_next_days_right += fundsdata[symbol]['meta'][indicator]["days_right"]
+            sum_of_rightable_days += (
+                fundsdata[symbol]['meta']["market_days"] - 1)
 
-        fundsdata[indicator]['meta']["average_return_rate"] = (
-            return_x_number_of_days / sum_of_number_of_days)
-        fundsdata[indicator]['meta']["next_days_right_rate"] = (
-            next_days_right_x_days_held / sum_of_days_held)
-        fundsdata[indicator]['meta']["per_day_return_rate"] = (
-            return_x_days_held / sum_of_days_held)
+        if sum_of_number_of_days != 0:
+            fundsdata[indicator]['meta']["average_return_rate"] = round(
+                (36500 * r / sum_of_number_of_days), 5)
+        else:
+            fundsdata[indicator]['meta']["average_return_rate"] = 0
+
+        if sum_of_rightable_days != 0:
+            fundsdata[indicator]['meta']["next_days_right_rate"] = round(
+                (sum_of_next_days_right / sum_of_rightable_days), 3)
+        else:
+            fundsdata[indicator]['meta']["next_days_right_rate"] = 0
+
+        if sum_of_days_held != 0:
+            fundsdata[indicator]['meta']["per_day_return_rate"] = round(
+                (36500 * r / sum_of_days_held), 5)
+        else:
+            fundsdata[indicator]['meta']["per_day_return_rate"] = 0
 
     return fundsdata
 
 
-def build_funds_meta_data(fundsdata):
-    funds_meta_data = {}
+def build_funds_meta_data(fundsdata, funds_meta_data):
     for indicator in strategems:
         funds_meta_data[indicator] = fundsdata[indicator]['meta']
 
@@ -144,34 +166,57 @@ def build_funds_meta_data(fundsdata):
     return funds_meta_data
 
 
+def add_data_descriptors():
+    funds_meta_data = {}
+    funds_meta_data["meta"] = {}
+    funds_meta_data["meta"]["average_return_rate"] = (
+        "average annualized percent profit or loss on $1 per stratem")
+    funds_meta_data["meta"]["next_days_right_rate"] = "daily predictive probability"
+    funds_meta_data["meta"]["per_day_return_rate"] = (
+        "average annualized percent daily return on $1 when invested")
+    funds_meta_data["meta"]["days_held"] = "number of days invested during period"
+    funds_meta_data["meta"]["days_right"] = (
+        "number of days predicted correctly during period")
+    funds_meta_data["meta"]["market days"] = "investment days available during period"
+    funds_meta_data["meta"]["days_right_rate"] = "same as next_days_right_rate"
+    funds_meta_data["meta"]["<indicator>_value"] = (
+        "value of $1 invested per strategem at end of period")
+    funds_meta_data["meta"]["average per day return"] = "same as per_day_return_rate"
+    funds_meta_data["meta"]["average_return_rate"] = (
+        "average annualized percent profit or loss on $1 per stratem")
+    funds_meta_data["meta"]["number_of_days"] = "number of days in period"
+
+    return funds_meta_data
+
+
 def build_processed_data():
     fundsdata = {}
-
+# mashall api data
     for symbol in symbols:
         fundsdata[symbol] = get_fundata(symbol)
-
+# get and merge data from strategems
     for indicator in strategems:
         for symbol in symbols:
             fundsdata[symbol] = merge_fund_indicator_returns(
                 symbol, indicator, fundsdata[symbol])
-
+# build and append per-fund and per-strategem summary values (averages)
     for indicator in strategems:
         fundsdata = append_summary(fundsdata, indicator)
-
-    funds_meta_data = build_funds_meta_data(fundsdata)
-
+# create readable JSON summary to save as smaller file
+# with explanatory notes for clarity
+    funds_meta_data = add_data_descriptors()
+    funds_meta_data = build_funds_meta_data(fundsdata, funds_meta_data)
+# build file names
     start = daterange[0]
     if not start:
         start = ""
     end = daterange[1]
     if not end:
         end = ""
-
-    if start and end:
-        funds_filename = "./json/processed/fundsdata " + start + " - " + " .json"
-        with open(funds_filename, "w") as writeJSON:
-            json.dump(fundsdata, writeJSON)
-
-    filename = "./json/processed/funds_meta_data " + start + " - " + " .json"
+    funds_filename = "./json/processed/fundsdata " + start + " - " + end + ".json"
+    filename = "./json/processed/funds_meta_data " + start + " - " + end + ".json"
+# save
+    with open(funds_filename, "w") as writeJSON:
+        json.dump(fundsdata, writeJSON)
     with open(filename, "w") as writeJSON:
         json.dump(funds_meta_data, writeJSON)

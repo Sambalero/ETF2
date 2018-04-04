@@ -74,24 +74,22 @@ def include_ownership(fundata, indicator, dates):
     return fundata
 
 
-def add_market_day_count(fundata, dates):
-    for i, date in enumerate(dates):
-        fundata[date]["market_days"] = i
-    return fundata
-
-
 def next_days_right(fundata, indicator, dates):
     next_days_right = 0
+# for Buy-and-Hold, whenever the price goes up it's right day
     if indicator == "Buy_and_Hold":
         for i, date in enumerate(dates):
             if i > 0:
                 if fundata[date]["4. close"] > fundata[dates[i - 1]]["4. close"]:
                     next_days_right += 1
+# any day after day 1 that we don't lose is a right next day
     else:
         for i, date in enumerate(dates):
-            if fundata[date]["held_per_" + indicator]:
-                if ((i + 1) < len(dates) and
-                        fundata[dates[i + 1]][indicator + "_return_today"] >= 0):
+            if i > 0:
+                if fundata[date]["held_per_" + indicator]:
+                    if fundata[date][indicator + "_return_today"] >= 0:
+                        next_days_right += 1
+                elif fundata[dates[i - 1]]["4. close"] >= fundata[date]["4. close"]:
                     next_days_right += 1
     return next_days_right
 
@@ -138,25 +136,32 @@ def calc_daily_bnh_returns(fundata, indicator, dates):
 
 def append_indicator_summary(fundata, indicator, dates):
 
-    if indicator == "Buy_and_Hold":
-        fundata["meta"][indicator]["days_held"] = len(dates) - 1
-    else:
-        fundata["meta"][indicator]["days_held"] = days_held(fundata, indicator, dates)
     fundata["meta"][indicator]["days_right"] = next_days_right(fundata, indicator, dates)
-    fundata["meta"][indicator]["market days"] = fundata[dates[-1]]["market_days"]
-    fundata["meta"][indicator]["days_right_rate"] = (
-        round(fundata["meta"][indicator]["days_right"] /
-              fundata[dates[-1]]["market_days"], 3))
 
     fundata["meta"][indicator][indicator + "_value"] = (
         round(fundata[dates[-1]][indicator + "_value"], 3))
 
-    fundata["meta"][indicator]["average per day return"] = round((
-        fundata["meta"][indicator][indicator + "_value"] - 1) /
-        fundata["meta"][indicator]["days_held"], 5)
+    if indicator == "Buy_and_Hold":
+        fundata["meta"][indicator]["days_held"] = len(dates) - 1
+    else:
+        fundata["meta"][indicator]["days_held"] = days_held(fundata, indicator, dates)
 
-    if fundata["meta"]["number_of_days"] > 0:
-        fundata["meta"][indicator]["average_return_rate"] = round(365 * (
+    if fundata["meta"]["market_days"] != 0:
+        fundata["meta"][indicator]["days_right_rate"] = (
+            round(fundata["meta"][indicator]["days_right"] /
+                  (fundata["meta"]["market_days"] - 1), 3))
+    else:
+        fundata["meta"][indicator]["days_right_rate"] = 0
+
+    if fundata["meta"][indicator]["days_held"] != 0:
+        fundata["meta"][indicator]["average per day return"] = round(36500 * (
+            fundata["meta"][indicator][indicator + "_value"] - 1) /
+            fundata["meta"][indicator]["days_held"], 5)
+    else:
+        fundata["meta"][indicator]["average per day return"] = 0
+
+    if fundata["meta"]["number_of_days"] != 0:
+        fundata["meta"][indicator]["average_return_rate"] = round(36500 * (
             fundata[dates[-1]][indicator + "_value"] - 1) /
             fundata["meta"]["number_of_days"], 5)
     else:
@@ -176,8 +181,6 @@ def calc_returns(fundata, indicator):
     else:
         fundata = include_ownership(fundata, indicator, dates)
         fundata = calc_daily_return(fundata, indicator, dates)
-# is this the same as len(dates) and is it needed as an intermediate value?
-    fundata = add_market_day_count(fundata, dates)
 
     if not("meta" in fundata.keys()):
         fundata["meta"] = {}
