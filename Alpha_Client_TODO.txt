@@ -1,4 +1,13 @@
-clean plot comments
+clean comments
 
-date input for price and macd, single fund everywhere
-cumulative write for pm file
+
+x = rate^time if xo = 1 and rate=dx/t
+negative return => x < 1
+r per day = (x/x0)8(1/days)
+
+
+ # build_processed_data - get_fundata - if old data get update?
+
+split indicators and strategies
+
+include_fund_specific_meta_data & append_summary to another file?

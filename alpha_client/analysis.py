@@ -41,6 +41,8 @@ def dates_from_keys(dates):
     dates = list(sorted(dates))
     if "meta" in dates:
         dates.remove("meta")
+    if "note" in dates:
+        dates.remove("note")
     return dates
 
 
@@ -63,20 +65,21 @@ def ownership_condition(indicator, value):
 
 
 def include_ownership(fundata, indicator, dates):
-    for i, date in enumerate(dates):
-        if i == 0:
-            fundata[date]["held_per_" + indicator] = False
-        else:
-            if (ownership_condition(indicator, float(fundata[dates[i - 1]][indicator])) ==
-                    "buy"):
-                fundata[date]["held_per_" + indicator] = True
-            if (ownership_condition(indicator, float(fundata[dates[i - 1]][indicator])) ==
-                    "stay"):
-                fundata[date]["held_per_" + indicator] = (
-                    fundata[dates[i - 1]]["held_per_" + indicator])
-            if (ownership_condition(indicator, float(fundata[dates[i - 1]][indicator])) ==
-                    "sell"):
+    if "meta" in fundata.keys():
+        for i, date in enumerate(dates):
+            if i == 0:
                 fundata[date]["held_per_" + indicator] = False
+            else:
+                if (ownership_condition(indicator, float(fundata[dates[i - 1]][indicator])) ==
+                        "buy"):
+                    fundata[date]["held_per_" + indicator] = True
+                if (ownership_condition(indicator, float(fundata[dates[i - 1]][indicator])) ==
+                        "stay"):
+                    fundata[date]["held_per_" + indicator] = (
+                        fundata[dates[i - 1]]["held_per_" + indicator])
+                if (ownership_condition(indicator, float(fundata[dates[i - 1]][indicator])) ==
+                        "sell"):
+                    fundata[date]["held_per_" + indicator] = False
     return fundata
 
 
@@ -109,24 +112,25 @@ def days_held(fundata, indicator, dates):
 
 
 def calc_daily_return(fundata, indicator, dates):
-    for i, date in enumerate(dates):
-        if i == 0:
-            fundata[date][indicator + "_value"] = 1
-            fundata[date][indicator + "_return_today"] = 0
-        else:
-            if fundata[date]["held_per_" + indicator]:  # I own it
-                if fundata[dates[i - 1]]["held_per_" + indicator]:  # I owned it yesterday
-                    fundata = add_today_s_change(fundata, indicator, date, dates[i - 1])
-                else:  # I bought it this morning
-                    fundata = add_first_day_s_change(
-                        fundata, indicator, date, dates[i - 1])
-            else:  # I don't own it
-                if fundata[dates[i - 1]]["held_per_" + indicator]:  # I sold it this a.m.
-                    fundata = add_overnight_change(fundata, indicator, date, dates[i - 1])
-                else:  # I still don't own it
-                    fundata[date][indicator + "_value"] = (
-                        fundata[dates[i - 1]][indicator + "_value"])
-                    fundata[date][indicator + "_return_today"] = 0
+    if "meta" in fundata.keys():
+        for i, date in enumerate(dates):
+            if i == 0:
+                fundata[date][indicator + "_value"] = 1
+                fundata[date][indicator + "_return_today"] = 0
+            else:
+                if fundata[date]["held_per_" + indicator]:  # I own it
+                    if fundata[dates[i - 1]]["held_per_" + indicator]:  # I owned it yesterday
+                        fundata = add_today_s_change(fundata, indicator, date, dates[i - 1])
+                    else:  # I bought it this morning
+                        fundata = add_first_day_s_change(
+                            fundata, indicator, date, dates[i - 1])
+                else:  # I don't own it
+                    if fundata[dates[i - 1]]["held_per_" + indicator]:  # I sold it this a.m.
+                        fundata = add_overnight_change(fundata, indicator, date, dates[i - 1])
+                    else:  # I still don't own it
+                        fundata[date][indicator + "_value"] = (
+                            fundata[dates[i - 1]][indicator + "_value"])
+                        fundata[date][indicator + "_return_today"] = 0
     return fundata
 
 
@@ -141,40 +145,30 @@ def calc_daily_bnh_returns(fundata, indicator, dates):
 
 
 def append_indicator_summary(fundata, indicator, dates):
+    if "meta" in fundata.keys():
+        fundata["meta"][indicator]["days_right"] = next_days_right(fundata, indicator, dates)
 
-    fundata["meta"][indicator]["days_right"] = next_days_right(fundata, indicator, dates)
+        try:
+            fundata["meta"][indicator][indicator + "_value"] = (
+                round(fundata[dates[-1]][indicator + "_value"], 3))
+        except:
+            import pdb; pdb.set_trace()
 
-    fundata["meta"][indicator][indicator + "_value"] = (
-        round(fundata[dates[-1]][indicator + "_value"], 3))
+        if indicator == "Buy_and_Hold":
+            fundata["meta"][indicator]["days_held"] = len(dates) - 1
+        else:
+            fundata["meta"][indicator]["days_held"] = days_held(fundata, indicator, dates)
 
-    if indicator == "Buy_and_Hold":
-        fundata["meta"][indicator]["days_held"] = len(dates) - 1
-    else:
-        fundata["meta"][indicator]["days_held"] = days_held(fundata, indicator, dates)
+        if fundata["meta"]["market_days"] != 0:
+            fundata["meta"][indicator]["days_right_rate"] = (
+                round(fundata["meta"][indicator]["days_right"] /
+                      (fundata["meta"]["market_days"] - 1), 3))
+        else:
+            fundata["meta"][indicator]["days_right_rate"] = 0
 
-    if fundata["meta"]["market_days"] != 0:
-        fundata["meta"][indicator]["days_right_rate"] = (
-            round(fundata["meta"][indicator]["days_right"] /
-                  (fundata["meta"]["market_days"] - 1), 3))
-    else:
-        fundata["meta"][indicator]["days_right_rate"] = 0
-
-    if fundata["meta"][indicator]["days_held"] != 0:
-        fundata["meta"][indicator]["average per day return"] = round(36500 * (
-            fundata["meta"][indicator][indicator + "_value"] - 1) /
-            fundata["meta"][indicator]["days_held"], 5)
-    else:
-        fundata["meta"][indicator]["average per day return"] = 0
-
-    if fundata["meta"]["number_of_days"] != 0:
-        fundata["meta"][indicator]["average_annual_return"] = round(36500 * (
-            fundata[dates[-1]][indicator + "_value"] - 1) /
-            fundata["meta"]["number_of_days"], 5)
-    else:
-        fundata["meta"][indicator]["average_return_rate"] = 0
-
-    fundata["meta"][indicator]["daily_return_rate"] = calc_rate_of_return(
-        1, fundata[dates[-1]][indicator + "_value"], len(dates) - 1)
+        fundata["meta"][indicator]["averaged_annualized_CAGR"] = round(36500 * (
+            calc_rate_of_return(1, fundata[dates[-1]][indicator + "_value"],
+                                len(dates) - 1) - 1), 4)
 
     return fundata
 
@@ -182,7 +176,7 @@ def append_indicator_summary(fundata, indicator, dates):
 # Assumes that we trade at the opening value after deciding ovrnight to buy or sell
 def calc_returns(fundata, indicator):
     # struct [date][indicator],[net_return],[value];
-    # r["average_return_rate"],["days_held"],["days_right_rate"],["number_of_days"]
+    # r["average_return"],["days_held"],["days_right_rate"],["number_of_days"]
     dates = dates_from_keys(fundata.keys())
 
     if indicator == "Buy_and_Hold":
@@ -191,11 +185,11 @@ def calc_returns(fundata, indicator):
         fundata = include_ownership(fundata, indicator, dates)
         fundata = calc_daily_return(fundata, indicator, dates)
 
-    if not("meta" in fundata.keys()):
-        fundata["meta"] = {}
 
-    if not(indicator in fundata["meta"].keys()):
-        fundata["meta"][indicator] = {}
-    fundata = append_indicator_summary(fundata, indicator, dates)
+    if ("meta" in fundata.keys()):
+
+        if not(indicator in fundata["meta"].keys()):
+            fundata["meta"][indicator] = {}
+        fundata = append_indicator_summary(fundata, indicator, dates)
 
     return(fundata)
