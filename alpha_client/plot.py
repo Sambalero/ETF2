@@ -18,7 +18,7 @@ def plottable(fundata):
     return plottable
 
 
-def full_pm(fun_data):
+def full_pm(fun_data):  # I don't think this is needed anymore. now done previously?
     fundata = {}
     all_the_keys = ['1. open', '2. high', '3. low', '4. close', '5. volume', 'MACD',
                     'MACD_Hist', 'MACD_Signal', 'SlowD', 'SlowK', 'RSI', 'ADX', 'CCI',

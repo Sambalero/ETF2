@@ -1,7 +1,8 @@
 import json
 from client import build_data_object, call_api
 from config import symbols, daterange, strategies, all_the_keys
-from analysis import calc_returns, dates_from_keys, calc_rate_of_return
+from config import save_fundsdata_file, precalc
+from analysis import calc_returns, dates_from_keys, calc_cagr
 from dateutil import parser
 
 
@@ -16,19 +17,30 @@ def build_summary(fundsdata, summary):
     return summary
 
 
+def add_selector_info(summary):
+    summary["options"] = {}
+    summary["options"]["strategies"] = strategies
+    summary["options"]["funds"] = symbols
+    summary["options"]["assume overnight delay"] = precalc
+
+    return summary
+
+
 def add_data_descriptors():
     summary = {}
-    summary["meta"] = {}
-    summary["meta"]["averaged_annualized_CAGR"] = (
-        "equivalent compounding annual percentage rate")
-    summary["meta"]["<strategy>_value"] = (
+    summary["keys"] = {}
+    summary["keys"]["CAGR"] = (
+        "equivalent compounding daily rate = (x/x0)^1/t - 1")
+    summary["keys"]["averaged_annualized_CAGR"] = (
+        "equivalent compounding annual percentage rate = 36500 x CAGR")
+    summary["keys"]["<strategy>_value"] = (
         "value of $1 invested per strategy at end of period")
-    summary["meta"]["next_days_right_rate"] = "daily predictive probability"
-    summary["meta"]["days_held"] = "number of days invested during period"
-    summary["meta"]["days_right"] = (
+    summary["keys"]["next_days_right_rate"] = "daily predictive probability"
+    summary["keys"]["days_held"] = "number of days invested during period"
+    summary["keys"]["days_right"] = (
         "number of days predicted correctly during period")
-    summary["meta"]["market days"] = "investment days available during period"
-    summary["meta"]["number_of_days"] = "number of days in period"
+    summary["keys"]["market days"] = "investment days available during period"
+    summary["keys"]["number_of_days"] = "number of days in period"
 
     return summary
 
@@ -103,13 +115,14 @@ def include_fund_specific_meta_data(fundata):
         fundata["meta"]["number_of_days"] = (
             parser.parse(dates[-1]) - parser.parse(dates[0])).days
         fundata["meta"]["market_days"] = len(dates)
-        fundata["meta"]["total return"] = round(
-            float(fundata["meta"]["starting price"]) -
-            float(fundata["meta"]["ending price"]), 3)
-        fundata["meta"]["averaged_annualized_CAGR"] = round(36500 * (calc_rate_of_return(
+        fundata["meta"]["return"] = round(
+            (float(fundata["meta"]["ending price"]) -
+             float(fundata["meta"]["starting price"])) /
+            float(fundata["meta"]["starting price"]), 3)
+        fundata["meta"]["averaged_annualized_CAGR"] = round(36500 * (calc_cagr(
             float(fundata["meta"]["starting price"]),
             float(fundata["meta"]["ending price"]),
-            fundata["meta"]["number_of_days"]) - 1), 4)
+            fundata["meta"]["number_of_days"])), 4)
     else:
         fundata["note"] = "No data in range for "
     return fundata
@@ -213,7 +226,8 @@ def build_processed_data():
     funds_filename = "./json/processed/fundsdata " + start + " - " + end + ".json"
     filename = "./json/processed/summary " + start + " - " + end + ".json"
 # save
-    with open(funds_filename, "w") as writeJSON:
-        json.dump(fundsdata, writeJSON)
+    if save_fundsdata_file:
+        with open(funds_filename, "w") as writeJSON:
+            json.dump(fundsdata, writeJSON)
     with open(filename, "w") as writeJSON:
         json.dump(summary, writeJSON)
