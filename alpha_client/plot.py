@@ -1,7 +1,24 @@
 import json
 from matplotlib import pyplot as plt
-from config import symbols, daterange
-from price_and_macd import add_to_pm_funds_data
+from config import symbols, daterange, strategies, all_the_keys, indicators
+from build_summary import build_file_names
+
+
+def plot_sets(fundata, indicator, strategy):
+    plottable = {}
+    dates = list(sorted(fundata.keys()))
+    plottable["dates"] = dates
+    plottable["indicator"] = []
+    plottable["price"] = []
+    plottable["value"] = []
+    for date in dates:
+        if strategy == "RSI2" or strategy == "RSI70":
+            plottable["indicator"].append(float(fundata[date]["RSI"]) / 50 - 1)
+        else:
+            plottable["indicator"].append(float(fundata[date][indicator]))
+        plottable["price"].append(float(fundata[date]["Buy_and_Hold_value"]))
+        plottable["value"].append(float(fundata[date][indicator + "_value"]))
+    return plottable
 
 
 # Massage fundata into parallel lists for plotting
@@ -20,11 +37,11 @@ def plottable(fundata):
 
 def full_pm(fun_data):  # I don't think this is needed anymore. now done previously?
     fundata = {}
-    all_the_keys = ['1. open', '2. high', '3. low', '4. close', '5. volume', 'MACD',
-                    'MACD_Hist', 'MACD_Signal', 'SlowD', 'SlowK', 'RSI', 'ADX', 'CCI',
-                    'Aroon Down', 'Aroon Up', 'Chaikin A/D', 'Real Lower Band',
-                    'Real Upper Band', 'Real Middle Band', 'OBV', 'mhreturn',
-                    'mhvalue', 'buy and hold value', 'return', 'price']
+    # all_the_keys = ['1. open', '2. high', '3. low', '4. close', '5. volume', 'MACD',
+    #                 'MACD_Hist', 'MACD_Signal', 'SlowD', 'SlowK', 'RSI', 'ADX', 'CCI',
+    #                 'Aroon Down', 'Aroon Up', 'Chaikin A/D', 'Real Lower Band',
+    #                 'Real Upper Band', 'Real Middle Band', 'OBV', 'mhreturn',
+    #                 'mhvalue', 'buy and hold value', 'return', 'price']
     for date in fun_data.keys():
         keys = fun_data[date].keys()
         if set(all_the_keys) <= set(keys):
@@ -119,8 +136,19 @@ def call_plot_3_y_values(symbols, fundata):
         plot_3_y_values(data_set, labels)
 
 
-# plots mdh, md value and price from pm files
-def work_with_files():
+def open_fundsdata():
+    (filename, funds_filename) = build_file_names()
+    try:
+        f = open(funds_filename)
+        fundsdata = json.load(f)
+        f.close()
+    except Exception as e:
+        print("if the file is missing, we could generate one here if we have to")
+        print(e)
+    return fundsdata
+
+
+def open_pm():
     start = daterange[0]
     end = daterange[1]
     fundsdata = {}
@@ -128,7 +156,6 @@ def work_with_files():
         filename = "./json/processed/pm" + start + " - " + end + ".json"
     else:
         filename = "./json/processed/pm.json"
-
     try:
         f = open(filename)
         fundsdata = json.load(f)
@@ -136,13 +163,17 @@ def work_with_files():
     except Exception as e:
         print("if the file is missing, we could generate one here if we have to")
         print(e)
+    return fundsdata
 
+
+# plots mdh, md value and price from pm files
+def work_with_files():
+    fundsdata = open_pm()
     for symbol in symbols:
-        if not(symbol in fundsdata.keys()):
-            fundata = add_to_pm_funds_data(symbol)
-        else:
-            fundata = fundsdata[symbol]
+        fundata = fundsdata[symbol]
         del fundata["meta"]
+        start = daterange[0]
+        end = daterange[1]
         if not(start and end):
             fundata = full_pm(fundata)
             title = symbol + " MACD and Price"
@@ -159,4 +190,42 @@ def work_with_files():
         data_set = tuple(zip(exes, days, op, ch, re))
         plot_3_y_values(data_set, labels)
 
-# python -c 'from plot import work_with_files; work_with_files()'
+# python -c 'from plot import work_with_files; work_with_files()
+
+
+def get_fund_and_strategy():
+    print("Funds:")
+    for i, fund in enumerate(symbols):
+        print(" " + repr(i) + ": " + fund)
+    symbol = symbols[int(input("Enter the fund number: "))]
+
+    print("Strategies:")
+    for i, strategy in enumerate(strategies):
+        print(" " + repr(i) + ": " + strategy)
+    strategy = strategies[int(input("Enter the Strategy number: "))]
+
+    indicator = indicators[strategy]
+    return(symbol, indicator, strategy)
+
+
+def plot_fundsdata():
+    fundsdata = open_fundsdata()
+    # import pdb; pdb.set_trace()
+    (symbol, indicator, strategy) = get_fund_and_strategy()
+    fundata = fundsdata[symbol]
+    if "meta" in fundata.keys():
+        del fundata["meta"]
+    start = daterange[0]
+    end = daterange[1]
+    title = symbol + " " + strategy + " and Price, " + start + " - " + end
+    fundata = plot_sets(fundata, indicator, strategy)
+    labels = (symbol, strategy, strategy + " value", "price", title, "file")
+    days = [str(int(day.replace('-', '')) - 20000000) for day in (fundata["dates"])]
+    op = fundata["indicator"]
+    ch = fundata["value"]
+    re = fundata["price"]
+    exes, days = zip(*[day for day in enumerate(days)])
+    data_set = tuple(zip(exes, days, op, ch, re))
+    plot_3_y_values(data_set, labels)
+
+# python -c 'from plot import plot_fundsdata; plot_fundsdata()'

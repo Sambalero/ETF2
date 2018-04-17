@@ -47,8 +47,9 @@ def dates_from_keys(dates):
     return dates
 
 
-def ownership_condition(indicator, value):
+def ownership_condition(fundata, indicator, dates, i):
     if indicator == "MACD_Hist":
+        value = float(fundata[dates[i - 1]][indicator])
         if value > 0:
             condition = "buy"
         if value == 0:
@@ -56,11 +57,46 @@ def ownership_condition(indicator, value):
         if value < 0:
             condition = "sell"
     if indicator == "RSI":
+        value = float(fundata[dates[i - 1]]["RSI"])
         if value > 50:
             condition = "buy"
         if value == 50:
             condition = "stay"
         if value < 50:
+            condition = "sell"
+    if indicator == "SlowD":
+        dvalue = float(fundata[dates[i - 1]]["SlowD"])
+        kvalue = float(fundata[dates[i - 1]]["SlowK"])
+        if kvalue > dvalue:
+            condition = "buy"
+        if kvalue == dvalue:
+            condition = "stay"
+        if kvalue < dvalue:
+            condition = "sell"
+    if indicator == "SlowK":
+        kvalue = float(fundata[dates[i - 1]]["SlowK"])
+        if kvalue < 20:
+            condition = "buy"
+        elif kvalue > 80:
+            condition = "sell"
+        else:
+            condition = "stay"
+# buy above 50 and rising
+    if indicator == "RSI2":
+        value = float(fundata[dates[i - 1]]["RSI"])
+        value2 = float(fundata[dates[i - 2]]["RSI"])
+        if value > 50 and value >= value2:
+            condition = "buy"
+        else:
+            condition = "sell"
+    return condition
+# buy above 70
+    if indicator == "RSI70":
+        value = float(fundata[dates[i - 1]]["RSI"])
+        # value2 = float(fundata[dates[i - 2]]["RSI"])
+        if value > 50:
+            condition = "buy"
+        else:
             condition = "sell"
     return condition
 
@@ -71,15 +107,12 @@ def include_ownership(fundata, indicator, dates):
             if i == 0:
                 fundata[date]["held_per_" + indicator] = False
             else:
-                if (ownership_condition(indicator, float(
-                        fundata[dates[i - 1]][indicator])) == "buy"):
+                if ownership_condition(fundata, indicator, dates, i) == "buy":
                     fundata[date]["held_per_" + indicator] = True
-                if (ownership_condition(indicator, float(
-                        fundata[dates[i - 1]][indicator])) == "stay"):
+                if ownership_condition(fundata, indicator, dates, i) == "stay":
                     fundata[date]["held_per_" + indicator] = (
                         fundata[dates[i - 1]]["held_per_" + indicator])
-                if (ownership_condition(indicator, float(
-                        fundata[dates[i - 1]][indicator])) == "sell"):
+                if ownership_condition(fundata, indicator, dates, i) == "sell":
                     fundata[date]["held_per_" + indicator] = False
     return fundata
 

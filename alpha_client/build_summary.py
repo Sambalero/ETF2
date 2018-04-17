@@ -17,17 +17,8 @@ def build_summary(fundsdata, summary):
     return summary
 
 
-def add_selector_info(summary):
-    summary["options"] = {}
-    summary["options"]["strategies"] = strategies
-    summary["options"]["funds"] = symbols
-    summary["options"]["assume overnight delay"] = precalc
+def add_data_descriptors(summary):
 
-    return summary
-
-
-def add_data_descriptors():
-    summary = {}
     summary["keys"] = {}
     summary["keys"]["CAGR"] = (
         "equivalent compounding daily rate = (x/x0)^1/t - 1")
@@ -41,6 +32,16 @@ def add_data_descriptors():
         "number of days predicted correctly during period")
     summary["keys"]["market days"] = "investment days available during period"
     summary["keys"]["number_of_days"] = "number of days in period"
+
+    return summary
+
+
+def add_selector_info():
+    summary = {}
+    summary["options"] = {}
+    summary["options"]["strategies"] = strategies
+    summary["options"]["funds"] = symbols
+    summary["options"]["assume overnight delay"] = not(precalc)
 
     return summary
 
@@ -197,6 +198,18 @@ def get_fundata(symbol):
     return fundata
 
 
+def build_file_names():
+    start = daterange[0]
+    if not start:
+        start = ""
+    end = daterange[1]
+    if not end:
+        end = ""
+    funds_filename = "./json/processed/fundsdata " + start + " - " + end + ".json"
+    filename = "./json/processed/summary " + start + " - " + end + ".json"
+    return(filename, funds_filename)
+
+
 def build_processed_data():
     fundsdata = {}
 # mashall api data
@@ -213,18 +226,14 @@ def build_processed_data():
     for indicator in strategies:
         fundsdata = append_summary(fundsdata, indicator)
 # create readable JSON summary to save as smaller file
-# with explanatory notes for clarity
-    summary = add_data_descriptors()
+# list selected options
+    summary = add_selector_info()
+# include explanatory notes for clarity
+    summary = add_data_descriptors(summary)
+# report averaged values by fund and strategy
     summary = build_summary(fundsdata, summary)
 # build file names
-    start = daterange[0]
-    if not start:
-        start = ""
-    end = daterange[1]
-    if not end:
-        end = ""
-    funds_filename = "./json/processed/fundsdata " + start + " - " + end + ".json"
-    filename = "./json/processed/summary " + start + " - " + end + ".json"
+    (filename, funds_filename) = build_file_names()
 # save
     if save_fundsdata_file:
         with open(funds_filename, "w") as writeJSON:
