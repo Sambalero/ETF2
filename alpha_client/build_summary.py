@@ -54,6 +54,7 @@ def append_summary(fundsdata, indicator):
         sum_of_number_of_days = 0
         sum_of_returns = 0
         sum_of_next_days_right = 0
+        sum_of_days_held_right = 0
         sum_of_rightable_days = 0
         sum_of_cagr_x_days = 0
 
@@ -66,6 +67,8 @@ def append_summary(fundsdata, indicator):
                 sum_of_number_of_days += fundsdata[symbol]['meta']["number_of_days"]
                 sum_of_next_days_right += (
                     fundsdata[symbol]['meta'][indicator]["days_right"])
+                sum_of_days_held_right += (
+                    fundsdata[symbol]['meta'][indicator]["profitable_days"])
                 sum_of_rightable_days += (
                     fundsdata[symbol]['meta']["market_days"] - 1)
                 sum_of_cagr_x_days += (
@@ -79,6 +82,12 @@ def append_summary(fundsdata, indicator):
         else:
             fundsdata[indicator]['meta']["next_days_right_rate"] = 0
 
+        if sum_of_days_held_right != 0:
+            fundsdata[indicator]['meta']["profitable_days_rate"] = round(
+                (sum_of_days_held_right / sum_of_days_held), 3)
+        else:
+            fundsdata[indicator]['meta']["next_days_right_rate"] = 0
+
         if sum_of_number_of_days != 0:
             fundsdata[indicator]['meta']["averaged_annualized_CAGR"] = round(
                 (sum_of_cagr_x_days / sum_of_number_of_days), 5)
@@ -88,11 +97,11 @@ def append_summary(fundsdata, indicator):
     return fundsdata
 
 
-def merge_fund_indicator_returns(symbol, indicator, fund_data):
+def merge_fund_indicator_returns(symbol, strategy, fund_data):
     fundata = {}
     dates = dates_from_keys(fund_data.keys())
 # calculate return values by fund using given strategy
-    fireturns = calc_returns(fund_data, indicator)
+    fireturns = calc_returns(fund_data, strategy)
 # merge with api data
     if "meta" in fund_data.keys():
         fundata["meta"] = {**fireturns["meta"], **fund_data["meta"]}
@@ -218,13 +227,13 @@ def build_processed_data():
 # add helpful fund specific information
         fundsdata[symbol] = include_fund_specific_meta_data(fundsdata[symbol])
 # get and merge data from investment return calculations
-    for indicator in strategies:
+    for strategy in strategies:
         for symbol in symbols:
             fundsdata[symbol] = merge_fund_indicator_returns(
-                symbol, indicator, fundsdata[symbol])
+                symbol, strategy, fundsdata[symbol])
 # build and append per-fund and per-strategem summary values (averages)
-    for indicator in strategies:
-        fundsdata = append_summary(fundsdata, indicator)
+    for strategy in strategies:
+        fundsdata = append_summary(fundsdata, strategy)
 # create readable JSON summary to save as smaller file
 # list selected options
     summary = add_selector_info()
