@@ -86,7 +86,7 @@ def week_by_date(symbol, this_week, api_data):
 
 
 def work_with_files(symbols=symbols):
-
+    print("working with files in client.py")
     this_week = {}
     for symbol in symbols:
         api_data = call_api(symbol)
@@ -100,3 +100,4 @@ def work_with_files(symbols=symbols):
     with open("./json/this_week.json", "w") as writeJSON:
         json.dump(this_week, writeJSON)
 # python -c 'from client import work_with_files; work_with_files()'
+# work_with_files()

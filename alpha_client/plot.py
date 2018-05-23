@@ -30,20 +30,18 @@ def plot_3_y_values(data_set, labels):
 
     ax.plot(x, c, label=labels[2])  # plot c against x
     ax.plot(x, r, label=labels[3])  # plot r against x
-    pairs = list(zip(x, y))  # ??????? xip x & y
-    while pairs[0][1] == 0:   # ???????
-        del pairs[0]  # ???????
-    (x, y) = zip(*tuple(pairs))  # ??????? unzip x & y
+    pairs = list(zip(x, y))  # list of x,y tuples
+    while pairs[0][1] == 0:   # delete leading empty tuples
+        del pairs[0]  
+    (x, y) = zip(*tuple(pairs))  # tuple of (tuple of x, tuple of y)
     ax.plot(x, y, label=labels[1])  # plot y against x
-    # oz = [0]*len(x)
     ax.plot(x, [0] * len(x))  # plot y=0 for reference
 
     h = max(y)  # get the height of the plot - need other series, too, actually
 
-    # these data point text labels are actually completely independent of the points
-    # label every ith point
+    # label 5 points
     i = (int(len(data_set) / 5))
-    text_set = data_set[0: 1 - i: i]  # label 5 points
+    text_set = data_set[0: 1 - i: i]  
     if text_set[-1] != data_set[-1]:  # label last point
         text_set = list(text_set)
         text_set.append(data_set[-1])
