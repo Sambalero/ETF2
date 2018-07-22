@@ -1,0 +1,4 @@
+Bugs.txt
+1: 7/22/18 api_data for WEAR does not include current date in return from client.call_api. There is no message so it is not handled well 
+
+2: 7/22/17 build summary output file ending date is 10 days ago?

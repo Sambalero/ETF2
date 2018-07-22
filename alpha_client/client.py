@@ -2,7 +2,14 @@ import json
 from api import *
 from config import symbols
 
+''' call api functions and format data '''
 
+def get_prices(symbol):
+    print("getting prices for", symbol)
+    prices = priceset(symbol).json()
+    # import pdb; pdb.set_trace()
+    return prices
+#  prices = priceset(symbol).json()["Time Series (Daily)"]
 def call_api(symbol):
     print("calling api for", symbol)
     prices = priceset(symbol)
@@ -21,7 +28,7 @@ def call_api(symbol):
 def build_data_object(symbol, api_data):
     (prices, macd, stoch, rsi, adx, cci, aroon, bbands, ad, obv) = api_data
     fundata = prices
-    dates = list(sorted(fundata.keys()))
+    dates = list(sorted(fundata.keys())) 
     for date in dates:
         if (not (macd is None)) and date in macd.keys():
             fundata[date]["MACD"] = macd[date]["MACD"]

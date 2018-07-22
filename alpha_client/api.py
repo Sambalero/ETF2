@@ -1,7 +1,7 @@
 import requests
 import time
 from config import apikey
-
+''' use requests to get data '''
 
 def get_with_retry(url, funkey, retries=10, backoff_factor=1):
     counter = 0

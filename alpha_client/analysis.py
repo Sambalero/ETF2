@@ -1,4 +1,44 @@
 from config import precalc
+import arrow
+
+''' basic api data crunching '''
+
+def pricefile(symbol):
+    return "./json/prices/" + symbol + ".json"
+
+# not exact since we really want buisiness days
+def too_old(date, num):
+    if (arrow.now() - arrow.get(date,'YYYY-MM-DD')).days > num:  
+        return True
+
+
+def write_prices(fundata, symbol):
+    filename = pricefile(symbol)
+    with open(filename, "w") as writeJSON:
+        json.dump(fundata, writeJSON)
+
+
+def read_json(filename):
+    try:
+        f = open(filename)
+        fundata = json.load(f)
+        f.close()
+    except (IOError, ValueError):
+        fundata = {}
+    return fundata
+
+
+def do_fundata(symbol):
+    filename = pricefile(symbol)
+    fundata = read_json(filename)
+    if fundata:
+        if too_old(dates_from_keys(fundata.keys())[-1], 2):
+            fundata = get_prices(symbol)["Time Series (Daily)"]  # get data
+            write_prices(fundata, symbol)
+    else:
+        fundata = get_prices(symbol)["Time Series (Daily)"]  # get data
+        write_prices(fundata, symbol)
+    return fundata
 
 
 def calc_cagr(start, end, days):
@@ -65,7 +105,9 @@ def rsi_peak(fundata, indicator, dates, i):
                 peak = indicator_value
     return peak
 
+# def MACD_Hist(fundata, dates, i):
 
+    
 def ownership_condition(fundata, strategy, dates, i):
     if strategy == "MACD_Hist":
         value = float(fundata[dates[i - 1]][strategy])

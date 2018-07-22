@@ -1,8 +1,8 @@
 import json
 from client import build_data_object, call_api
-from config import symbols, daterange, strategies, all_the_keys
+from config import daterange, strategies, all_the_keys, etfs_to_process
 from config import save_fundsdata_file, precalc
-from analysis import calc_returns, dates_from_keys, calc_cagr
+from analysis import calc_returns, dates_from_keys, calc_cagr, too_old
 from dateutil import parser
 
 
@@ -10,7 +10,7 @@ def build_summary(fundsdata, summary):
     for indicator in strategies:
         summary[indicator] = fundsdata[indicator]['meta']
 
-    for symbol in symbols:
+    for symbol in etfs_to_process:
         if "meta" in fundsdata[symbol].keys():
             summary[symbol] = fundsdata[symbol]['meta']
 
@@ -40,7 +40,7 @@ def add_selector_info():
     summary = {}
     summary["options"] = {}
     summary["options"]["strategies"] = strategies
-    summary["options"]["funds"] = symbols
+    summary["options"]["funds"] = etfs_to_process
     summary["options"]["assume overnight delay"] = not(precalc)
 
     return summary
@@ -59,7 +59,7 @@ def append_summary(fundsdata, indicator):
         sum_of_cagr_x_days = 0
 
 # if there's data, build subtotals for aggregate calcs
-        for symbol in symbols:
+        for symbol in etfs_to_process:
             if "meta" in fundsdata[symbol].keys():
                 r = fundsdata[symbol]['meta'][indicator][indicator + "_value"] - 1
                 sum_of_returns += r
@@ -182,14 +182,21 @@ def limit_fundata(fundata):
     return fundata
 
 
-def get_fundata(symbol):
+def get_fundata(symbol): 
     filename = "./json/raw/" + symbol + ".json"  # if old data get update?
 # read from file if there is one; call api if there isn't
     try:
         f = open(filename)
         fundata = json.load(f)
         f.close()
-    except IOError:
+    except Exception as e:
+        print(e)
+        api_data = call_api(symbol)  # a response object set
+        fundata = build_data_object(symbol, api_data)
+        with open(filename, "w") as writeJSON:
+            json.dump(fundata, writeJSON)
+    if too_old(dates_from_keys(fundata.keys())[-1], 2):
+        # import pdb; pdb.set_trace()
         api_data = call_api(symbol)
         fundata = build_data_object(symbol, api_data)
         with open(filename, "w") as writeJSON:
@@ -220,15 +227,16 @@ def build_file_names():
 
 
 def build_processed_data():
+    # import pdb; pdb.set_trace()
     fundsdata = {}
-# mashall api data
-    for symbol in symbols:
+# marshall api data
+    for symbol in etfs_to_process:
         fundsdata[symbol] = get_fundata(symbol)
 # add helpful fund specific information
         fundsdata[symbol] = include_fund_specific_meta_data(fundsdata[symbol])
 # get and merge data from investment return calculations
     for strategy in strategies:
-        for symbol in symbols:
+        for symbol in etfs_to_process:
             fundsdata[symbol] = merge_fund_indicator_returns(
                 symbol, strategy, fundsdata[symbol])
 # build and append per-fund and per-strategem summary values (averages)
@@ -249,3 +257,4 @@ def build_processed_data():
             json.dump(fundsdata, writeJSON)
     with open(filename, "w") as writeJSON:
         json.dump(summary, writeJSON)
+# python -c 'from build_summary import build_processed_data; build_processed_data()'
