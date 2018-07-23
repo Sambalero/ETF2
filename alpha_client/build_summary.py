@@ -2,7 +2,7 @@ import json
 from client import build_data_object, call_api
 from config import daterange, strategies, all_the_keys, etfs_to_process
 from config import save_fundsdata_file, precalc
-from analysis import calc_returns, dates_from_keys, calc_cagr, too_old
+from analysis import Strats, calc_returns, dates_from_keys, calc_cagr, too_old
 from dateutil import parser
 
 

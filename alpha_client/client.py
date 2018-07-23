@@ -1,6 +1,6 @@
 import json
 from api import *
-from config import symbols
+from config import etfs_to_process
 
 ''' call api functions and format data '''
 
@@ -92,10 +92,10 @@ def week_by_date(symbol, this_week, api_data):
     return this_week
 
 
-def work_with_files(symbols=symbols):
+def work_with_files(etfs_to_process=etfs_to_process):
     print("working with files in client.py")
     this_week = {}
-    for symbol in symbols:
+    for symbol in etfs_to_process:
         api_data = call_api(symbol)
         filename = "./json/raw/" + symbol + ".json"
         fundata = build_data_object(symbol, api_data)

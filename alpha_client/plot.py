@@ -1,6 +1,6 @@
 import json
 from matplotlib import pyplot as plt
-from config import symbols, daterange, strategies, indicators
+from config import etfs_to_process, daterange, strategies, indicators
 from build_summary import build_file_names
 
 
@@ -108,9 +108,9 @@ def open_fundsdata():
 
 def get_fund_and_strategy():
     print("Funds:")
-    for i, fund in enumerate(symbols):
+    for i, fund in enumerate(etfs_to_process):
         print(" " + repr(i) + ": " + fund)
-    symbol = symbols[int(input("Enter the fund number: "))]
+    symbol = etfs_to_process[int(input("Enter the fund number: "))]
 
     print("Strategies:")
     for i, strategy in enumerate(strategies):

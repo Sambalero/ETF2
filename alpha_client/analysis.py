@@ -105,11 +105,8 @@ def rsi_peak(fundata, indicator, dates, i):
                 peak = indicator_value
     return peak
 
-# def MACD_Hist(fundata, dates, i):
-
-    
-def ownership_condition(fundata, strategy, dates, i):
-    if strategy == "MACD_Hist":
+class Strats:
+    def MACD_Hist(fundata, strategy, dates, i):
         value = float(fundata[dates[i - 1]][strategy])
         if value > 0:
             condition = "buy"
@@ -117,7 +114,10 @@ def ownership_condition(fundata, strategy, dates, i):
             condition = "stay"
         if value < 0:
             condition = "sell"
-    if strategy == "RSI":
+        return condition
+
+
+    def RSI(fundata, strategy, dates, i):
         value = float(fundata[dates[i - 1]]["RSI"])
         if value > 50:
             condition = "buy"
@@ -125,7 +125,10 @@ def ownership_condition(fundata, strategy, dates, i):
             condition = "stay"
         if value < 50:
             condition = "sell"
-    if strategy == "SlowD":
+        return condition
+
+
+    def SlowD(fundata, strategy, dates, i):
         dvalue = float(fundata[dates[i - 1]]["SlowD"])
         kvalue = float(fundata[dates[i - 1]]["SlowK"])
         if kvalue > dvalue:
@@ -134,7 +137,10 @@ def ownership_condition(fundata, strategy, dates, i):
             condition = "stay"
         if kvalue < dvalue:
             condition = "sell"
-    if strategy == "SlowK":
+        return condition
+
+
+    def SlowK(fundata, strategy, dates, i):
         kvalue = float(fundata[dates[i - 1]]["SlowK"])
         if kvalue < 20:
             condition = "buy"
@@ -142,17 +148,21 @@ def ownership_condition(fundata, strategy, dates, i):
             condition = "sell"
         else:
             condition = "stay"
-# buy above 50 and rising
-    if strategy == "RSI2":
+        return condition
+
+
+    # buy above 50 and rising
+    def RSI2(fundata, strategy, dates, i):
         value = float(fundata[dates[i - 1]]["RSI"])
         value2 = float(fundata[dates[i - 2]]["RSI"])
         if value > 50 and value >= value2:
             condition = "buy"
         else:
             condition = "sell"
+        return condition
 
-# buy crossing to above 70, sell when dropping from a peak
-    if strategy == "RSI70":
+
+    def RSI70(fundata, strategy, dates, i):
         value = float(fundata[dates[i - 1]]["RSI"])
         value2 = float(fundata[dates[i - 2]]["RSI"])
         peak = rsi_peak(fundata, "RSI", dates, i)
@@ -160,7 +170,8 @@ def ownership_condition(fundata, strategy, dates, i):
             condition = "buy"
         else:
             condition = "sell"
-    return condition
+        return condition
+
 
 
 def include_ownership(fundata, strategy, dates):
@@ -171,12 +182,13 @@ def include_ownership(fundata, strategy, dates):
             if i == 0:
                 fundata[date]["held_per_" + strategy] = False
             else:
-                if ownership_condition(fundata, strategy, dates, i) == "buy":
+                ownership_condition = getattr(Strats, strategy)(fundata, strategy, dates, i)
+                if ownership_condition == "buy":
                     fundata[date]["held_per_" + strategy] = True
-                if ownership_condition(fundata, strategy, dates, i) == "stay":
+                if ownership_condition== "stay":
                     fundata[date]["held_per_" + strategy] = (
                         fundata[dates[i - 1]]["held_per_" + strategy])
-                if ownership_condition(fundata, strategy, dates, i) == "sell":
+                if ownership_condition == "sell":
                     fundata[date]["held_per_" + strategy] = False
     return fundata
 

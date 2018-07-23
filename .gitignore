@@ -106,8 +106,18 @@ venv.bak/
 # config
 config*
 
-#output files
+# output files
 *.json
 *.csv
-*notes*.txt
 plots/
+bak/
+csv/
+json/
+
+# personal
+*notes*.txt
+script.py
+
+# temp
+*.temp
+temp*.*
