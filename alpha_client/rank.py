@@ -1,6 +1,6 @@
 from config import fidelity, symbols
 from client import get_prices
-from analysis import dates_from_keys, pricefile, too_old, write_prices, read_json, do_fundata
+from analysis import dates_from_keys, pricefile, write_prices, read_json, do_fundata
 from jsontocsv import *
 import json
   

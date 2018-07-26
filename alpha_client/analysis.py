@@ -1,4 +1,4 @@
-from config import precalc
+from config import precalc, old
 import arrow
 
 ''' basic api data crunching '''
@@ -7,7 +7,7 @@ def pricefile(symbol):
     return "./json/prices/" + symbol + ".json"
 
 # not exact since we really want buisiness days
-def too_old(date, num):
+def too_old(date, num=old):
     if (arrow.now() - arrow.get(date,'YYYY-MM-DD')).days > num:  
         return True
 
@@ -161,6 +161,17 @@ class Strats:
             condition = "sell"
         return condition
 
+    def RSI3(fundata, strategy, dates, i):
+        value = float(fundata[dates[i - 1]]["RSI"])
+        value2 = float(fundata[dates[i - 2]]["RSI"])
+        if value > 50 and value >= value2:
+            condition = "buy"
+        elif value < 50:
+            condition = "sell"
+        else:
+            condition =  "stay"
+        return condition
+
 
     def RSI70(fundata, strategy, dates, i):
         value = float(fundata[dates[i - 1]]["RSI"])
@@ -172,8 +183,18 @@ class Strats:
             condition = "sell"
         return condition
 
+    def crossover_with_rank(fundata, strategy, dates, i):
+        # make sure rank value is available and up to date for range
+        # find fund in rank range
+        if rsi > 50 and rsi > rsi2 and price > sma and price2 < sma and rank < 5:
+            condition = "buy"
+        elif rsi < 50 and price < sma:
+            condition = "sell"
+        else:
+            condition =  "stay"
+        return condition
 
-
+        #  don't need strategy in Strats args
 def include_ownership(fundata, strategy, dates):
     if "meta" in fundata.keys():
         for i, date in enumerate(dates):

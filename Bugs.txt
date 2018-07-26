@@ -1,3 +1,12 @@
 Bugs.txt
-1: 7/22/18 api_data for WEAR does not include current date in return from client.call_api. There is no message so it is not handled well 
+1: 7/22/18 api_data for WEAR does not include current date in return from client.call_api. There is no message so it is not handled well
+2. hangs without notice at times during fetch
+3. fundsdata file is too big. select what to save
+get sma, ema from alphavantage
+probability of loss under buy conditions
+do sma strategy
 
+build summary get_fundata 198
+call api > add mas in client 36
+all_ in config
+build_data_object

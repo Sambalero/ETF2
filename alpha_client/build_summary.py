@@ -1,6 +1,6 @@
 import json
-from client import build_data_object, call_api
-from config import daterange, strategies, all_the_keys, etfs_to_process
+from client import build_data_object, call_api, add_ma, update_data_object
+from config import daterange, strategies, all_the_keys, etfs_to_process, old
 from config import save_fundsdata_file, precalc
 from analysis import Strats, calc_returns, dates_from_keys, calc_cagr, too_old
 from dateutil import parser
@@ -191,13 +191,14 @@ def get_fundata(symbol):
         f.close()
     except Exception as e:
         print(e)
-        api_data = call_api(symbol)  # a response object set
+        api_data = call_api(symbol)  
         fundata = build_data_object(symbol, api_data)
         with open(filename, "w") as writeJSON:
             json.dump(fundata, writeJSON)
-    if too_old(dates_from_keys(fundata.keys())[-1], 2):
-        # import pdb; pdb.set_trace()
+    if too_old(dates_from_keys(fundata.keys())[-1]):
         api_data = call_api(symbol)
+
+        # import pdb; pdb.set_trace()
         fundata = build_data_object(symbol, api_data)
         with open(filename, "w") as writeJSON:
             json.dump(fundata, writeJSON)
@@ -231,6 +232,7 @@ def build_processed_data():
     fundsdata = {}
 # marshall api data
     for symbol in etfs_to_process:
+        # import pdb; pdb.set_trace()
         fundsdata[symbol] = get_fundata(symbol)
 # add helpful fund specific information
         fundsdata[symbol] = include_fund_specific_meta_data(fundsdata[symbol])
@@ -257,4 +259,34 @@ def build_processed_data():
             json.dump(fundsdata, writeJSON)
     with open(filename, "w") as writeJSON:
         json.dump(summary, writeJSON)
+
+def add_more_indicators():
+    # import pdb; pdb.set_trace()
+# marshall api data
+    for symbol in etfs_to_process:
+        filename = "./json/raw/" + symbol + ".json"  # if old data get update?
+    # read from file if there is one; call api if there isn't
+        try:
+            f = open(filename)
+            fundata = json.load(f)
+            f.close()
+        except Exception as e:
+            print(e)
+            api_data = call_api(symbol)  
+            fundata = build_data_object(symbol, api_data)
+            with open(filename, "w") as writeJSON:
+                json.dump(fundata, writeJSON)
+        # --------------  unless mas in most recent fundata object #
+        dates = dates_from_keys(fundata.keys())
+        for ma in ["sma", "ema"]:
+            if not (ma.upper() in  fundata[dates[-1]]):
+                api_data = add_ma(symbol, ma)  # a response object set
+                fundata = update_data_object(fundata, symbol, api_data)
+        with open(filename, "w") as writeJSON:
+            json.dump(fundata, writeJSON)  
+
+
+# get and merge data from investment return calculations
+
 # python -c 'from build_summary import build_processed_data; build_processed_data()'
+# python -c 'from build_summary import add_more_indicators; add_more_indicators()'

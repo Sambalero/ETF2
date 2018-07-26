@@ -9,24 +9,45 @@ def get_prices(symbol):
     prices = priceset(symbol).json()
     # import pdb; pdb.set_trace()
     return prices
-#  prices = priceset(symbol).json()["Time Series (Daily)"]
-def call_api(symbol):
-    print("calling api for", symbol)
-    prices = priceset(symbol)
-    macd = macds(symbol)
-    stoch = stoich(symbol)
-    rsi = rsis(symbol)
-    adx = adxs(symbol)
-    cci = ccis(symbol)
-    aroon = aroons(symbol)
-    bbands = bbandses(symbol)
-    ad = ads(symbol)
-    obv = obvs(symbol)
-    return (prices, macd, stoch, rsi, adx, cci, aroon, bbands, ad, obv)
 
+def call_api(symbol):
+    print("calling api for prices", symbol)
+    prices = Api.priceset(symbol)
+    print("calling api for macds", symbol)
+    macd = Api.macds(symbol)
+    print("calling api for stoich", symbol)
+    stoch = Api.stoich(symbol)
+    print("calling api for rsis", symbol)
+    rsi = Api.rsis(symbol)
+    print("calling api for adxs", symbol)
+    adx = Api.adxs(symbol)
+    print("calling api for ccis", symbol)
+    cci = Api.ccis(symbol)
+    print("calling api for aroons", symbol)
+    aroon = Api.aroons(symbol)
+    print("calling api for bbandses", symbol)
+    bbands = Api.bbandses(symbol)
+    print("calling api for ads", symbol)
+    ad = Api.ads(symbol)
+    print("calling api for obvs", symbol)
+    obv = Api.obvs(symbol)
+    print("calling api for smas", symbol)
+    sma = Api.smas(symbol)
+    print("calling api for emas", symbol)
+    ema = Api.emas(symbol)
+    return (prices, macd, stoch, rsi, adx, cci, aroon, bbands, ad, obv, sma, ema)
+
+
+# one-time method. delete after use
+def add_ma(symbol, ma):
+    # import pdb; pdb.set_trace()
+    pa = ma + "s"
+    print("calling api for " + pa, symbol)
+    ma = getattr(Api, pa)(symbol)
+    return (ma)
 
 def build_data_object(symbol, api_data):
-    (prices, macd, stoch, rsi, adx, cci, aroon, bbands, ad, obv) = api_data
+    (prices, macd, stoch, rsi, adx, cci, aroon, bbands, ad, obv, sma, ema) = api_data
     fundata = prices
     dates = list(sorted(fundata.keys())) 
     for date in dates:
@@ -54,6 +75,10 @@ def build_data_object(symbol, api_data):
             fundata[date]["Real Middle Band"] = bbands[date]["Real Middle Band"]
         if date in obv.keys():
             fundata[date]["OBV"] = obv[date]["OBV"]
+        if date in sma.keys():
+            fundata[date]["SMA"] = sma[date]["SMA"]
+        if date in ema.keys():
+            fundata[date]["EMA"] = ema[date]["EMA"]
     return fundata
 
 
@@ -99,12 +124,22 @@ def work_with_files(etfs_to_process=etfs_to_process):
         api_data = call_api(symbol)
         filename = "./json/raw/" + symbol + ".json"
         fundata = build_data_object(symbol, api_data)
-        this_week = week_by_date(symbol, this_week, api_data)
+        # this_week = week_by_date(symbol, this_week, api_data)
 
         with open(filename, "w") as writeJSON:
             json.dump(fundata, writeJSON)
 
     with open("./json/this_week.json", "w") as writeJSON:
         json.dump(this_week, writeJSON)
+
+
+def update_data_object(fundata, symbol, api_data):
+    # (prices, macd, stoch, rsi, adx, cci, aroon, bbands, ad, obv, sma, ema) = api_data
+    dates = list(sorted(fundata.keys())) 
+    for date in dates:
+        if date in api_data.keys():
+            # import pdb; pdb.set_trace()
+            fundata[date][list(api_data[date].keys())[0]] = list(api_data[date].values())[0]
+    return fundata
 # python -c 'from client import work_with_files; work_with_files()'
 # work_with_files()

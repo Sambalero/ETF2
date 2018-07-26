@@ -1,6 +1,6 @@
-from config import fidelity, symbols
+from config import fidelity, symbols, old, etfs_to_process
 from client import get_prices
-from analysis import dates_from_keys
+from analysis import dates_from_keys, too_old
 from jsontocsv import *
 import json
 import arrow
@@ -17,11 +17,6 @@ def write_prices(fundata, symbol):
     with open(filename, "w") as writeJSON:
         json.dump(fundata, writeJSON)
 
- 
-# not exact since we really want buisiness days
-def too_old(date, num):
-    if (arrow.now() - arrow.get(date,'YYYY-MM-DD')).days > num:  
-        return True
 
 def pricefile(symbol):
     return "./json/prices/" + symbol + ".json"
@@ -41,7 +36,7 @@ def do_fundata(symbol):
     filename = pricefile(symbol)
     fundata = read_json(filename)
     if fundata:
-        if too_old(dates_from_keys(fundata.keys())[-1], 2):
+        if too_old(dates_from_keys(fundata.keys())[-1]):
             fundata = get_prices(symbol)["Time Series (Daily)"]  # get data
             write_prices(fundata, symbol)
     else:

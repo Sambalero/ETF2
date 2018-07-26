@@ -12,7 +12,7 @@ def plot_sets(fundata, indicator, strategy):
     plottable["price"] = []
     plottable["value"] = []
     for date in dates:
-        if strategy == "RSI2" or strategy == "RSI70":
+        if strategy == "RSI2" or strategy == "RSI70" or strategy == "RSI3":
             plottable["indicator"].append(float(fundata[date]["RSI"]) / 50 - 1)
         elif strategy == "SlowK":
             plottable["indicator"].append(float(fundata[date]["SlowK"]) / 50)
