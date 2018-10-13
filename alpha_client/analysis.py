@@ -1,5 +1,6 @@
-from config import precalc, old
+import config  #  import precalc, old
 import arrow
+import json
 
 ''' basic api data crunching '''
 
@@ -7,8 +8,10 @@ def pricefile(symbol):
     return "./json/prices/" + symbol + ".json"
 
 # not exact since we really want buisiness days
-def too_old(date, num=old):
-    if (arrow.now() - arrow.get(date,'YYYY-MM-DD')).days > num:  
+def too_old(date, age=0):
+    if age == 0:
+        age = config.old
+    if (arrow.now() - arrow.get(date,'YYYY-MM-DD')).days > int(age):  
         return True
 
 
@@ -27,18 +30,18 @@ def read_json(filename):
         fundata = {}
     return fundata
 
-
-def do_fundata(symbol):
-    filename = pricefile(symbol)
-    fundata = read_json(filename)
-    if fundata:
-        if too_old(dates_from_keys(fundata.keys())[-1], 2):
-            fundata = get_prices(symbol)["Time Series (Daily)"]  # get data
-            write_prices(fundata, symbol)
-    else:
-        fundata = get_prices(symbol)["Time Series (Daily)"]  # get data
-        write_prices(fundata, symbol)
-    return fundata
+# '''updated in probability.py'''
+# def do_fundata(symbol): 
+#     filename = pricefile(symbol)
+#     fundata = read_json(filename)
+#     if fundata:
+#         if too_old(dates_from_keys(fundata.keys())[-1], 2):
+#             fundata = get_prices(symbol)["Time Series (Daily)"]  # get data
+#             write_prices(fundata, symbol)
+#     else:
+#         fundata = get_prices(symbol)["Time Series (Daily)"]  # get data
+#         write_prices(fundata, symbol)
+#     return fundata
 
 
 def calc_cagr(start, end, days):
@@ -172,6 +175,18 @@ class Strats:
             condition =  "stay"
         return condition
 
+    def RSI4(fundata, strategy, dates, i):
+        priceyesterday = float(fundata[dates[i - 1]]["4. close"])
+        rsiyesterday = float(fundata[dates[i - 1]]["RSI"])
+        smayesterday = float(fundata[dates[i - 1]]["SMA"])
+        heldyesterday = fundata[dates[i - 1]]["held_per_RSI4"]
+        if rsiyesterday >= 50 and priceyesterday >= smayesterday and not(heldyesterday):
+            condition = "buy"
+        elif rsiyesterday < 50 and priceyesterday < smayesterday and heldyesterday:
+            condition = "sell"
+        else:
+            condition =  "stay"
+        return condition
 
     def RSI70(fundata, strategy, dates, i):
         value = float(fundata[dates[i - 1]]["RSI"])
@@ -183,7 +198,9 @@ class Strats:
             condition = "sell"
         return condition
 
-    def crossover_with_rank(fundata, strategy, dates, i):
+
+    '''not done '''
+    def crossover_with_rank(fundata, strategy, dates, i): 
         # make sure rank value is available and up to date for range
         # find fund in rank range
         if rsi > 50 and rsi > rsi2 and price > sma and price2 < sma and rank < 5:

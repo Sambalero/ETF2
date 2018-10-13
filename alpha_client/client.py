@@ -4,81 +4,74 @@ from config import etfs_to_process
 
 ''' call api functions and format data '''
 
-def get_prices(symbol):
+def get_prices(symbol, outputsize='full'):
     print("getting prices for", symbol)
-    prices = priceset(symbol).json()
+    prices = Api.priceset(symbol, outputsize)
     # import pdb; pdb.set_trace()
     return prices
 
-def call_api(symbol):
+def call_api(symbol, outputsize='full'):
     print("calling api for prices", symbol)
-    prices = Api.priceset(symbol)
+    prices = Api.priceset(symbol, outputsize)
     print("calling api for macds", symbol)
-    macd = Api.macds(symbol)
+    macd = Api.macds(symbol, outputsize)
     print("calling api for stoich", symbol)
-    stoch = Api.stoich(symbol)
+    stoch = Api.stoich(symbol, outputsize)
     print("calling api for rsis", symbol)
-    rsi = Api.rsis(symbol)
+    rsi = Api.rsis(symbol, outputsize)
     print("calling api for adxs", symbol)
-    adx = Api.adxs(symbol)
+    adx = Api.adxs(symbol, outputsize)
     print("calling api for ccis", symbol)
-    cci = Api.ccis(symbol)
+    cci = Api.ccis(symbol, outputsize)
     print("calling api for aroons", symbol)
-    aroon = Api.aroons(symbol)
+    aroon = Api.aroons(symbol, outputsize)
     print("calling api for bbandses", symbol)
-    bbands = Api.bbandses(symbol)
+    bbands = Api.bbandses(symbol, outputsize)
     print("calling api for ads", symbol)
-    ad = Api.ads(symbol)
+    ad = Api.ads(symbol, outputsize)
     print("calling api for obvs", symbol)
-    obv = Api.obvs(symbol)
+    obv = Api.obvs(symbol, outputsize)
     print("calling api for smas", symbol)
-    sma = Api.smas(symbol)
+    sma = Api.smas(symbol, outputsize)
     print("calling api for emas", symbol)
-    ema = Api.emas(symbol)
+    ema = Api.emas(symbol, outputsize)
     return (prices, macd, stoch, rsi, adx, cci, aroon, bbands, ad, obv, sma, ema)
 
-
-# one-time method. delete after use
-def add_ma(symbol, ma):
-    # import pdb; pdb.set_trace()
-    pa = ma + "s"
-    print("calling api for " + pa, symbol)
-    ma = getattr(Api, pa)(symbol)
-    return (ma)
 
 def build_data_object(symbol, api_data):
     (prices, macd, stoch, rsi, adx, cci, aroon, bbands, ad, obv, sma, ema) = api_data
     fundata = prices
-    dates = list(sorted(fundata.keys())) 
-    for date in dates:
-        if (not (macd is None)) and date in macd.keys():
-            fundata[date]["MACD"] = macd[date]["MACD"]
-            fundata[date]["MACD_Hist"] = macd[date]["MACD_Hist"]
-            fundata[date]["MACD_Signal"] = macd[date]["MACD_Signal"]
-        if not (stoch is None) and date in stoch.keys():
-            fundata[date]["SlowD"] = stoch[date]["SlowD"]
-            fundata[date]["SlowK"] = stoch[date]["SlowK"]
-        if date in rsi.keys():
-            fundata[date]["RSI"] = rsi[date]["RSI"]
-        if not (adx is None) and date in adx.keys():
-            fundata[date]["ADX"] = adx[date]["ADX"]
-        if date in cci.keys():
-            fundata[date]["CCI"] = cci[date]["CCI"]
-        if date in aroon.keys():
-            fundata[date]["Aroon Down"] = aroon[date]["Aroon Down"]
-            fundata[date]["Aroon Up"] = aroon[date]["Aroon Up"]
-        if date in ad.keys():
-            fundata[date]["Chaikin A/D"] = ad[date]["Chaikin A/D"]
-        if date in bbands.keys():
-            fundata[date]["Real Lower Band"] = bbands[date]["Real Lower Band"]
-            fundata[date]["Real Upper Band"] = bbands[date]["Real Upper Band"]
-            fundata[date]["Real Middle Band"] = bbands[date]["Real Middle Band"]
-        if date in obv.keys():
-            fundata[date]["OBV"] = obv[date]["OBV"]
-        if date in sma.keys():
-            fundata[date]["SMA"] = sma[date]["SMA"]
-        if date in ema.keys():
-            fundata[date]["EMA"] = ema[date]["EMA"]
+    if fundata:
+        dates = list(sorted(fundata.keys())) 
+        for date in dates:
+            if (not (macd is None)) and date in macd.keys():
+                fundata[date]["MACD"] = macd[date]["MACD"]
+                fundata[date]["MACD_Hist"] = macd[date]["MACD_Hist"]
+                fundata[date]["MACD_Signal"] = macd[date]["MACD_Signal"]
+            if not (stoch is None) and date in stoch.keys():
+                fundata[date]["SlowD"] = stoch[date]["SlowD"]
+                fundata[date]["SlowK"] = stoch[date]["SlowK"]
+            if not (rsi is None) and date in rsi.keys():
+                fundata[date]["RSI"] = rsi[date]["RSI"]
+            if not (adx is None) and date in adx.keys():
+                fundata[date]["ADX"] = adx[date]["ADX"]
+            if not (cci is None) and date in cci.keys():
+                fundata[date]["CCI"] = cci[date]["CCI"]
+            if not (aroon is None) and date in aroon.keys():
+                fundata[date]["Aroon Down"] = aroon[date]["Aroon Down"]
+                fundata[date]["Aroon Up"] = aroon[date]["Aroon Up"]
+            if not (ad is None) and date in ad.keys():
+                fundata[date]["Chaikin A/D"] = ad[date]["Chaikin A/D"]
+            if not (bbands is None) and date in bbands.keys():
+                fundata[date]["Real Lower Band"] = bbands[date]["Real Lower Band"]
+                fundata[date]["Real Upper Band"] = bbands[date]["Real Upper Band"]
+                fundata[date]["Real Middle Band"] = bbands[date]["Real Middle Band"]
+            if not (obv is None) and date in obv.keys():
+                fundata[date]["OBV"] = obv[date]["OBV"]
+            if not (sma is None) and date in sma.keys():
+                fundata[date]["SMA"] = sma[date]["SMA"]
+            if not (ema is None) and date in ema.keys():
+                fundata[date]["EMA"] = ema[date]["EMA"]
     return fundata
 
 
@@ -116,7 +109,7 @@ def week_by_date(symbol, this_week, api_data):
             this_week[date][symbol]["OBV"] = obv[date]["OBV"]
     return this_week
 
-
+' no longer neeeded'
 def work_with_files(etfs_to_process=etfs_to_process):
     print("working with files in client.py")
     this_week = {}

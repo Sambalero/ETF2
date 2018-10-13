@@ -13,11 +13,7 @@ def convert(inputfile=None, inputobject=None, outputfile=None, linekey=None):
     else:
         raise UnboundLocalError("No input to convert")
 
-    # summary[predictive_period]["poscount"] =
-    # object with simple object values
-    # {ppvalue: {"poscount": value, ...}}
-    # predictive_period,poscount,possible,N,points,probability
-    # 0,246603,431201,200,431201,0.5719
+    # print("outputfile: ", outputfile)
 
     with open(outputfile, "w") as csv_out:
         writer = csv.writer(csv_out)
@@ -31,9 +27,45 @@ def convert(inputfile=None, inputobject=None, outputfile=None, linekey=None):
                 header.extend(export[line].keys())
                 writer.writerow(header)
                 count += 1
+            # import pdb; pdb.set_trace()
             row = [line]
-            row.extend(export[line].values())
+            try:
+                row.extend(export[line].values())
+            except:
+                if line == 'note':
+                    pass
             writer.writerow(row)
+
+def convertranked(inputfile=None, inputobject=None, outputfile=None, linekey=None): 
+
+    if inputobject:
+        export = inputobject
+    elif inputfile:
+        f = open(inputfile)
+        export = json.load(f)
+        f.close()
+    else:
+        raise UnboundLocalError("No input to convert")
+
+    with open(outputfile, "w") as csv_out:
+        writer = csv.writer(csv_out)
+        count = 0
+        # import pdb; pdb.set_trace()
+        for line in export:
+            # print("export[line]: ", export[line])
+            if count == 0:
+                if linekey:
+                    header = ["date", linekey]
+                else:
+                    header = [] 
+                header.extend(export[line][list(export[line].keys())[0]].keys())
+                writer.writerow(header)
+                count += 1
+            # import pdb; pdb.set_trace()
+            for obj in export[line]:
+                row = [line, obj] 
+                row.extend(export[line][obj].values())
+                writer.writerow(row)
 
 def convert_list(inputfile=None, inputobject=None, outputfile=None, linekey=None): 
 
@@ -72,11 +104,6 @@ def btconvert(inputfile=None, inputobject=None, outputfile=None, linekey=None):
     else:
         raise UnboundLocalError("No input to convert")
 
-    # summary[predictive_period]["poscount"] =
-    # object with simple object values
-    # {ppvalue: {"poscount": value, ...}}
-    # predictive_period,poscount,possible,N,points,probability
-    # 0,246603,431201,200,431201,0.5719
 
     with open(outputfile, "w", newline='') as csv_out:
         writer = csv.writer(csv_out)
@@ -119,12 +146,12 @@ def btconvert_with_rank(inputfile=None, inputobject=None, outputfile=None, linek
                 if linekey:
                     header = [linekey]
                 else:
-                    header = ['Date', 'Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume', 'rank']
+                    header = ['Date', 'Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume', 'rank2', 'rank20', 'rank130']
                 writer.writerow(header)
             else:  # we skip the first date since it has no rank value.
                 row = [date]
                 row.extend(list(export[date].values())[0: 4])
-                row.extend([export[date]['4. close'], export[date]['5. volume'], export[date]['rank']])
+                row.extend([export[date]['4. close'], export[date]['5. volume'], export[date]['rank2'], export[date]['rank20'], export[date]['rank130']])
                 writer.writerow(row)
 
 # python -c 'from jsontocsv import convert; convert()'
@@ -139,3 +166,10 @@ def btconvert_with_rank(inputfile=None, inputobject=None, outputfile=None, linek
 # print(dict_depth(dic))
 
 # https://www.w3resource.com/python-exercises/list/python-data-type-list-exercise-70.php
+
+def debugvert():
+    convert(inputfile="./json/prices/" + "AIA" + ".json", inputobject=None, outputfile="./json/fundata/222.csv", linekey=None)
+
+#python -c 'from jsontocsv import debugvert; debugvert()'
+
+'''json.dump(fundata, open("./json/fundata/111.json", "w"))'''

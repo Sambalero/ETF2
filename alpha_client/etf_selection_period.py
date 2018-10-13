@@ -1,3 +1,8 @@
+'''deprecated
+replaced with probability/py
+'''
+
+
 from config import fidelity, symbols, old, etfs_to_process
 from client import get_prices
 from analysis import dates_from_keys, too_old
@@ -18,10 +23,6 @@ def write_prices(fundata, symbol):
         json.dump(fundata, writeJSON)
 
 
-def pricefile(symbol):
-    return "./json/prices/" + symbol + ".json"
-
-
 def read_json(filename):
     try:
         f = open(filename)
@@ -32,15 +33,15 @@ def read_json(filename):
     return fundata
 
 
-def do_fundata(symbol):
+def get_fund_price_data(symbol):
     filename = pricefile(symbol)
     fundata = read_json(filename)
     if fundata:
         if too_old(dates_from_keys(fundata.keys())[-1]):
-            fundata = get_prices(symbol)["Time Series (Daily)"]  # get data
+            fundata = get_prices(symbol, "compact")  # get data
             write_prices(fundata, symbol)
     else:
-        fundata = get_prices(symbol)["Time Series (Daily)"]  # get data
+        fundata = get_prices(symbol) # get data
         write_prices(fundata, symbol)
     return fundata
 
@@ -58,9 +59,8 @@ def predict_two_weeks_from_now():
     results = {}
     summary = {}
     for etf in fidelity + list(set(symbols) - set(fidelity)):  
-        fundata = do_fundata(etf)
-        # do_fundata will build & maintain the collection of price history files for etfs of interest.
-        # they are maintained in files rather than streamed on the assumption that they will be acccessed too often to always stream.
+        fundata = get_fund_price_data(etf)
+        # why do this separately from rank, etc?
         dates = dates_from_keys(fundata.keys())    
         results[etf] = {}
         period_range = range(len(fundata) - 10)
@@ -77,16 +77,16 @@ def predict_two_weeks_from_now():
             summary[period]["N"] += 1
 
             for i in range(last_index_value): 
-                past_delta = float(fundata[dates[i+period]]["4. close"]) - float(fundata[dates[i]]["4. close"])
+                return_over_preceding_period = float(fundata[dates[i+period]]["4. close"]) - float(fundata[dates[i]]["4. close"])
 
-                future_delta = float(fundata[dates[i+period+10]]["4. close"]) - float(fundata[dates[i+period]]["4. close"] )
+                return_in_two_weeks = float(fundata[dates[i+period+10]]["4. close"]) - float(fundata[dates[i+period]]["4. close"] )
 
-                deltas.append({"i" : i, "dates" : ([dates[i]], [dates[i+period]]), "deltas": (past_delta, future_delta)})
-                if past_delta >= 0:
+                deltas.append({"i" : i, "dates" : ([dates[i]], [dates[i+period]]), "deltas": (return_over_preceding_period, return_in_two_weeks)})
+                if return_over_preceding_period >= 0:
                     possible += 1
-                    if future_delta > 0: 
+                    if return_in_two_weeks > 0: 
                         poscount += 1
-                if past_delta < 0 and future_delta < 0: 
+                if return_over_preceding_period < 0 and return_in_two_weeks < 0: 
                     negcount += 1
 
             results[etf][period]["poscount"] += poscount
@@ -105,7 +105,7 @@ def predict_two_weeks_from_now():
 
 def append_delta1825_and_delta14_to_files():
     for etf in fidelity + list(set(symbols) - set(fidelity)):
-        fundata = do_fundata(etf)
+        fundata = get_fund_price_data(etf)
         dates = dates_from_keys(fundata.keys())
         if len(dates) > 1839:
             for i in range(1825, len(dates)): 
@@ -118,7 +118,7 @@ def append_delta1825_and_delta14_to_files():
 
 def append_2_wk_change_to_files():
     for etf in fidelity + list(set(symbols) - set(fidelity)):
-        fundata = do_fundata(etf)
+        fundata = get_fund_price_data(etf)
         dates = dates_from_keys(fundata.keys())
         if len(dates) > 15:
             for i in range(15, len(dates)): 
@@ -133,7 +133,7 @@ def rank_and_value():
     summary = {}
     for etf in fidelity + list(set(symbols) - set(fidelity)):  #  ['PTH', "QQQ", "FPX", "ONEQ"]:    
         # print (etf)
-        fundata = do_fundata(etf)
+        fundata = get_fund_price_data(etf)
         dates = dates_from_keys(fundata.keys())
         for date in dates:
             if ("delta1825" in fundata[date].keys() and "delta14" in fundata[date].keys()):
@@ -178,7 +178,7 @@ def rank_and_prob():
 def top_100():
     deltas = []
     for etf in fidelity + list(set(symbols) - set(fidelity)):  
-        fundata = do_fundata(etf)
+        fundata = get_fund_price_data(etf)
         dates = dates_from_keys(fundata.keys())    
         period = 5*365  # from runs of predict_two_weeks_from_now(); we learned that the jum at 11 years was due to narrowing the field
         if len(dates) > period:
@@ -238,8 +238,11 @@ def set_6_year_rank(fundata, etf, six_year_returns):
 
 def create_csv_price_files():
     ''' these files get moved to backtrader. maybe link?'''
-    for etf in fidelity + list(set(symbols) - set(fidelity)): #  ["AADR"]: #
-        fundata = do_fundata(etf)
+    # for etf in fidelity + list(set(symbols) - set(fidelity)): #  ["AADR"]: #
+    for etf in etfs_to_process:
+        #  update fundata files
+        fundata = get_fund_price_data(etf)
+        #  this ordering may not be necessary
         import collections
         rfundata = collections.OrderedDict(fundata)
         
@@ -255,14 +258,14 @@ def rank_etfs():
     funds_to_process = fidelity + list(set(symbols) - set(fidelity))  # ["AADR", "QQQ", "FPX", "ONEQ"] #  ['AADR'] #    
     six_year_returns = {}
     for etf in funds_to_process:
-        fundata = do_fundata(etf)
+        fundata = get_fund_price_data(etf)
         fundata = set_6_year_return(fundata, etf)  # include return in etf pricefile & json
         # collect returns in an object so they can be ranked
         six_year_returns = build_6_year_returns(fundata, etf, six_year_returns)  
     six_year_returns = append_rank_to_6_year_returns(six_year_returns)  # include the returns rank in the etf pricefile
     print(six_year_returns["2018-01-30"])
     for etf in funds_to_process:
-        fundata = do_fundata(etf)
+        fundata = get_fund_price_data(etf)
         fundata = set_6_year_rank(fundata, etf, six_year_returns)
         # write_prices(fundata, etf)
         ranked_price_file = "./../../trdr/backtrader/datas/ranked/" + etf + ".txt"

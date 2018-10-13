@@ -21,74 +21,74 @@ class Api:
       return
 
 
-  def priceset(symbol):
+  def priceset(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=" +
              symbol + "&outputsize=full&apikey=" + apikey)
       return Api.get_with_retry(url, "Time Series (Daily)")
 
 
-  def macds(symbol):
+  def macds(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=MACD&symbol=" + symbol +
              "&interval=daily&series_type=close &apikey=" + apikey)
       return Api.get_with_retry(url, "Technical Analysis: MACD")
 
 
-  def stoich(symbol):
+  def stoich(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=STOCH&symbol=" + symbol +
              "&interval=daily&apikey=" + apikey)
       return Api.get_with_retry(url, "Technical Analysis: STOCH")
 
 
-  def rsis(symbol):
+  def rsis(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=RSI&symbol=" + symbol +
              "&interval=daily&time_period=14&series_type=close &apikey=" + apikey)
       return Api.get_with_retry(url, "Technical Analysis: RSI")
 
 
-  def adxs(symbol):
+  def adxs(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=ADX&symbol=" + symbol +
              "&interval=daily&time_period=14&apikey=" + apikey)
       return Api.get_with_retry(url, "Technical Analysis: ADX")
 
 
-  def ccis(symbol):
+  def ccis(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=CCI&symbol=" + symbol +
              "&interval=daily&time_period=14&apikey=" + apikey)
       return Api.get_with_retry(url, "Technical Analysis: CCI")
 
 
-  def aroons(symbol):
+  def aroons(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=AROON&symbol=" + symbol +
              "&interval=daily&time_period=14&apikey=" + apikey)
       return Api.get_with_retry(url, "Technical Analysis: AROON")
 
 
-  def bbandses(symbol):
+  def bbandses(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=BBANDS&symbol=" + symbol +
              "&interval=daily&time_period=5&series_type=\
              close &nbdevup=3&nbdevdn=3&apikey=" + apikey)
       return Api.get_with_retry(url, "Technical Analysis: BBANDS")
 
 
-  def ads(symbol):
+  def ads(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=AD&symbol=" + symbol +
              "&interval=daily&apikey=" + apikey)
       return Api.get_with_retry(url, "Technical Analysis: Chaikin A/D")
 
 
-  def obvs(symbol):
+  def obvs(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=OBV&symbol=" + symbol +
              "&interval=daily&apikey=" + apikey)
       return Api.get_with_retry(url, "Technical Analysis: OBV")
 
 
-  def smas(symbol):
+  def smas(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=SMA&symbol=" + symbol +
              "&interval=daily&time_period=60&series_type=close&apikey=" + apikey)
       return Api.get_with_retry(url, "Technical Analysis: SMA")
 
 
-  def emas(symbol):
+  def emas(symbol, outputsize="full"):
       url = ("https://www.alphavantage.co/query?function=EMA&symbol=" + symbol +
              "&interval=daily&time_period=60&series_type=close&apikey=" + apikey)
       return Api.get_with_retry(url, "Technical Analysis: EMA")
