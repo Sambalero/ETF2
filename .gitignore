@@ -117,6 +117,10 @@ json/
 # personal
 *notes*.txt
 script.py
+*TODO*
+Bugs.txt
+DebugNotes.py
+What Ive Learned.txt
 
 # temp
 *.temp
